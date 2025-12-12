@@ -1,0 +1,80 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if user owns a document
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    // Helper function to check if user is game admin
+    function isGameAdmin(gameId) {
+      return get(/databases/$(database)/documents/games/$(gameId)).data.adminId == request.auth.uid;
+    }
+    
+    // Nations collection - read-only for everyone, write for admins only
+    match /nations/{nationId} {
+      allow read: if true;
+      allow write: if false; // Only Cloud Functions can modify
+    }
+    
+    // Territories collection - read-only base data
+    match /territories/{territoryId} {
+      allow read: if true;
+      allow write: if false; // Only Cloud Functions can modify
+    }
+    
+    // Players collection
+    match /players/{playerId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isOwner(playerId);
+      allow update: if isOwner(playerId);
+      allow delete: if false;
+    }
+    
+    // Games collection
+    match /games/{gameId} {
+      allow read: if true;
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && (
+        isGameAdmin(gameId) || 
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['players'])
+      );
+      allow delete: if isGameAdmin(gameId);
+      
+      // Game state subcollection
+      match /state/{stateDoc} {
+        allow read: if true;
+        allow write: if false; // Only Cloud Functions can modify
+      }
+      
+      // Player actions subcollection
+      match /actions/{actionId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated();
+        allow update, delete: if false;
+      }
+    }
+    
+    // Game state collection (for real-time updates)
+    match /gameState/{gameId} {
+      allow read: if true;
+      allow write: if false; // Only Cloud Functions can modify
+      
+      match /territories/{territoryId} {
+        allow read: if true;
+        allow write: if false;
+      }
+      
+      match /nations/{nationId} {
+        allow read: if true;
+        allow write: if false;
+      }
+    }
+  }
+}

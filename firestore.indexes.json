@@ -1,0 +1,37 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "territories",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "owner", "order": "ASCENDING" },
+        { "fieldPath": "population", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "territories",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "nation", "order": "ASCENDING" },
+        { "fieldPath": "resources.oil", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "players",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "gameId", "order": "ASCENDING" },
+        { "fieldPath": "joinedAt", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "actions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "playerId", "order": "ASCENDING" },
+        { "fieldPath": "timestamp", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}
