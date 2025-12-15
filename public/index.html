@@ -7,122 +7,384 @@
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/hud.css">
     <link rel="stylesheet" href="css/terminal.css">
+    <link rel="stylesheet" href="css/menu.css">
     <!-- Google Fonts for military/terminal aesthetic -->
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- Main 3D Canvas Container -->
-    <div id="globe-container"></div>
+    <!-- ============================================
+         MAIN MENU SCREEN
+         ============================================ -->
+    <div id="menu-screen">
+        <!-- Animated Background -->
+        <div class="menu-background"></div>
+        <div class="radar-overlay"></div>
+        
+        <!-- Menu Header -->
+        <header class="menu-header">
+            <div class="menu-logo">STRATCOM</div>
+            <div class="menu-subtitle">Strategic Command Global Interface</div>
+            <div class="menu-classification">TOP SECRET // NOFORN // ORCON</div>
+        </header>
+        
+        <!-- Menu Content -->
+        <main class="menu-content">
+            <div class="menu-panels">
+                
+                <!-- Left Panel - Game Options -->
+                <div class="menu-panel">
+                    <div class="panel-header">
+                        <div class="panel-icon">⬡</div>
+                        <div class="panel-title">COMMAND CENTER</div>
+                    </div>
+                    <div class="panel-body">
+                        <button class="menu-btn" id="btn-new-game">
+                            <span class="btn-icon">◉</span>
+                            <span class="btn-text">
+                                NEW CAMPAIGN
+                                <span class="btn-subtitle">Initialize new strategic operation</span>
+                            </span>
+                            <span class="btn-arrow">▶</span>
+                        </button>
+                        
+                        <button class="menu-btn" id="btn-load-game" disabled>
+                            <span class="btn-icon">◈</span>
+                            <span class="btn-text">
+                                CONTINUE OPERATION
+                                <span class="btn-subtitle">Resume saved campaign data</span>
+                            </span>
+                            <span class="btn-arrow">▶</span>
+                        </button>
+                        
+                        <button class="menu-btn" id="btn-multiplayer" disabled>
+                            <span class="btn-icon">◎</span>
+                            <span class="btn-text">
+                                JOINT OPERATIONS
+                                <span class="btn-subtitle">Multiplayer strategic command</span>
+                            </span>
+                            <span class="btn-arrow">▶</span>
+                        </button>
+                        
+                        <button class="menu-btn" id="btn-settings">
+                            <span class="btn-icon">⚙</span>
+                            <span class="btn-text">
+                                SYSTEM CONFIG
+                                <span class="btn-subtitle">Adjust terminal parameters</span>
+                            </span>
+                            <span class="btn-arrow">▶</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Center Panel - Auth/Profile -->
+                <div class="menu-panel" id="auth-panel">
+                    <div class="panel-header">
+                        <div class="panel-icon">👤</div>
+                        <div class="panel-title">OPERATOR AUTHENTICATION</div>
+                        <span class="panel-status offline" id="auth-status-badge">OFFLINE</span>
+                    </div>
+                    <div class="panel-body">
+                        <!-- Logged Out State -->
+                        <div id="auth-logged-out">
+                            <div class="login-form">
+                                <div class="form-group">
+                                    <label class="form-label">Email Address</label>
+                                    <input type="email" class="form-input" id="login-email" placeholder="operator@command.mil">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Access Code</label>
+                                    <input type="password" class="form-input" id="login-password" placeholder="••••••••••••">
+                                </div>
+                                <button class="btn-submit" id="btn-login">AUTHENTICATE</button>
+                                
+                                <div class="form-divider">
+                                    <span>OR</span>
+                                </div>
+                                
+                                <button class="btn-google" id="btn-google-login">
+                                    <span>🔐</span>
+                                    <span>AUTHENTICATE VIA GOOGLE</span>
+                                </button>
+                                
+                                <div class="form-footer">
+                                    <span class="form-link" id="btn-register">Request Access</span>
+                                    <span class="form-link" id="btn-forgot">Reset Credentials</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Logged In State -->
+                        <div id="auth-logged-in" class="hidden">
+                            <div class="auth-status">
+                                <div class="auth-avatar" id="user-avatar">👤</div>
+                                <div class="auth-info">
+                                    <div class="auth-name" id="user-display-name">COMMANDER</div>
+                                    <div class="auth-email" id="user-email">loading...</div>
+                                    <div class="auth-rank">CLEARANCE: LEVEL 5</div>
+                                </div>
+                            </div>
+                            <button class="menu-btn" id="btn-logout">
+                                <span class="btn-icon">⏻</span>
+                                <span class="btn-text">
+                                    SIGN OUT
+                                    <span class="btn-subtitle">Terminate secure session</span>
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right Panel - Saved Games -->
+                <div class="menu-panel">
+                    <div class="panel-header">
+                        <div class="panel-icon">📁</div>
+                        <div class="panel-title">OPERATION FILES</div>
+                    </div>
+                    <div class="panel-body">
+                        <div id="saves-list" class="saves-list">
+                            <div class="no-saves">
+                                <div class="no-saves-icon">📂</div>
+                                <div class="no-saves-text">NO SAVED OPERATIONS</div>
+                                <div class="no-saves-text" style="margin-top: 8px; opacity: 0.5;">Authenticate to access saved data</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+        </main>
+        
+        <!-- System Console -->
+        <div class="menu-console">
+            <div class="console-header">◉ SYSTEM CONSOLE</div>
+            <div class="console-body" id="menu-console-output">
+                <div class="console-line"><span class="timestamp">[SYS]</span> STRATCOM Terminal v0.1.0 initialized</div>
+                <div class="console-line"><span class="timestamp">[SYS]</span> Establishing secure connection...</div>
+            </div>
+        </div>
+        
+        <!-- Menu Footer -->
+        <footer class="menu-footer">
+            <div class="footer-info">
+                <div class="footer-item">
+                    <span class="footer-label">SERVER:</span>
+                    <span class="footer-value" id="server-status">CONNECTING...</span>
+                </div>
+                <div class="footer-item">
+                    <span class="footer-label">PING:</span>
+                    <span class="footer-value" id="ping-value">--ms</span>
+                </div>
+                <div class="footer-item">
+                    <span class="footer-label">OPERATORS ONLINE:</span>
+                    <span class="footer-value" id="players-online">--</span>
+                </div>
+            </div>
+            <div class="version-info">BUILD 2025.12.15 // CODENAME: THUNDERDOME</div>
+        </footer>
+    </div>
     
-    <!-- Scanline Overlay -->
-    <div id="scanlines"></div>
-    
-    <!-- Top HUD Bar -->
-    <header id="top-hud">
-        <div class="hud-section hud-left">
-            <div class="hud-logo">
-                <span class="logo-icon">◉</span>
-                <span class="logo-text">STRATCOM</span>
+    <!-- ============================================
+         NEW GAME MODAL
+         ============================================ -->
+    <div class="modal-overlay" id="modal-new-game">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">◉ INITIALIZE NEW CAMPAIGN</div>
+                <button class="modal-close" data-close-modal>&times;</button>
             </div>
-            <div class="hud-date" id="game-date">2025.01.01</div>
-        </div>
-        <div class="hud-section hud-center">
-            <div class="hud-title">GLOBAL COMMAND INTERFACE</div>
-            <div class="hud-status" id="connection-status">
-                <span class="status-dot"></span>
-                <span class="status-text">INITIALIZING...</span>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Operation Codename</label>
+                    <input type="text" class="form-input" id="new-game-name" placeholder="OPERATION THUNDERSTRIKE">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Starting Nation</label>
+                    <select class="form-input" id="new-game-nation">
+                        <option value="">-- SELECT NATION --</option>
+                        <option value="USA">🇺🇸 United States of America</option>
+                        <option value="CHN">🇨🇳 People's Republic of China</option>
+                        <option value="RUS">🇷🇺 Russian Federation</option>
+                        <option value="DEU">🇩🇪 Germany</option>
+                        <option value="GBR">🇬🇧 United Kingdom</option>
+                        <option value="FRA">🇫🇷 France</option>
+                        <option value="JPN">🇯🇵 Japan</option>
+                        <option value="IND">🇮🇳 India</option>
+                        <option value="BRA">🇧🇷 Brazil</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Difficulty</label>
+                    <select class="form-input" id="new-game-difficulty">
+                        <option value="easy">RECRUIT - Simplified mechanics</option>
+                        <option value="normal" selected>OFFICER - Standard difficulty</option>
+                        <option value="hard">COMMANDER - Enhanced AI</option>
+                        <option value="expert">GENERAL - Realistic challenge</option>
+                    </select>
+                </div>
             </div>
-        </div>
-        <div class="hud-section hud-right">
-            <div class="hud-player" id="player-info">
-                <span class="player-label">OPERATOR:</span>
-                <span class="player-name" id="player-name">UNASSIGNED</span>
-            </div>
-            <button class="hud-btn" id="btn-auth">LOGIN</button>
-        </div>
-    </header>
-    
-    <!-- Left Sidebar - Nation Info -->
-    <aside id="sidebar-left" class="sidebar">
-        <div class="sidebar-header">
-            <span class="sidebar-title">NATION STATUS</span>
-            <span class="sidebar-icon">▼</span>
-        </div>
-        <div class="sidebar-content" id="nation-panel">
-            <div class="panel-placeholder">
-                <span class="placeholder-icon">⊕</span>
-                <span class="placeholder-text">SELECT A NATION</span>
-            </div>
-        </div>
-    </aside>
-    
-    <!-- Right Sidebar - Territory Info -->
-    <aside id="sidebar-right" class="sidebar">
-        <div class="sidebar-header">
-            <span class="sidebar-title">TERRITORY INTEL</span>
-            <span class="sidebar-icon">▼</span>
-        </div>
-        <div class="sidebar-content" id="territory-panel">
-            <div class="panel-placeholder">
-                <span class="placeholder-icon">◎</span>
-                <span class="placeholder-text">HOVER OVER TERRITORY</span>
-            </div>
-        </div>
-    </aside>
-    
-    <!-- Bottom HUD Bar -->
-    <footer id="bottom-hud">
-        <div class="hud-section hud-left">
-            <div class="coord-display">
-                <span class="coord-label">LAT:</span>
-                <span class="coord-value" id="lat-value">---.--</span>
-                <span class="coord-label">LON:</span>
-                <span class="coord-value" id="lon-value">---.--</span>
-            </div>
-        </div>
-        <div class="hud-section hud-center">
-            <div class="game-controls">
-                <button class="control-btn" id="btn-pause" title="Pause">⏸</button>
-                <button class="control-btn" id="btn-play" title="Play">▶</button>
-                <button class="control-btn" id="btn-fast" title="Fast Forward">⏩</button>
-            </div>
-            <div class="speed-indicator">
-                <span class="speed-label">SPEED:</span>
-                <span class="speed-value" id="game-speed">PAUSED</span>
-            </div>
-        </div>
-        <div class="hud-section hud-right">
-            <div class="zoom-display">
-                <span class="zoom-label">ZOOM:</span>
-                <span class="zoom-value" id="zoom-level">1.0x</span>
-            </div>
-            <div class="fps-display">
-                <span class="fps-label">FPS:</span>
-                <span class="fps-value" id="fps-value">--</span>
-            </div>
-        </div>
-    </footer>
-    
-    <!-- Tooltip for territory hover -->
-    <div id="tooltip" class="tooltip hidden">
-        <div class="tooltip-header">
-            <span class="tooltip-name" id="tooltip-name">Territory</span>
-            <span class="tooltip-flag" id="tooltip-flag">🏴</span>
-        </div>
-        <div class="tooltip-body">
-            <div class="tooltip-row">
-                <span class="tooltip-label">Owner:</span>
-                <span class="tooltip-value" id="tooltip-owner">Unknown</span>
-            </div>
-            <div class="tooltip-row">
-                <span class="tooltip-label">Population:</span>
-                <span class="tooltip-value" id="tooltip-pop">--</span>
+            <div class="modal-footer">
+                <button class="menu-btn" data-close-modal style="max-width: 150px;">
+                    <span class="btn-text">ABORT</span>
+                </button>
+                <button class="btn-submit" id="btn-start-campaign" style="flex: 1;">
+                    COMMENCE OPERATION
+                </button>
             </div>
         </div>
     </div>
     
+    <!-- ============================================
+         MULTIPLAYER MODAL
+         ============================================ -->
+    <div class="modal-overlay" id="modal-multiplayer">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">◎ JOINT OPERATIONS CENTER</div>
+                <button class="modal-close" data-close-modal>&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="display: flex; gap: 12px; margin-bottom: 20px;">
+                    <button class="menu-btn" id="btn-create-lobby" style="flex: 1;">
+                        <span class="btn-icon">+</span>
+                        <span class="btn-text">CREATE LOBBY</span>
+                    </button>
+                    <button class="menu-btn" id="btn-join-lobby" style="flex: 1;">
+                        <span class="btn-icon">→</span>
+                        <span class="btn-text">JOIN LOBBY</span>
+                    </button>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Lobby Code</label>
+                    <input type="text" class="form-input" id="lobby-code-input" placeholder="Enter 6-digit code" maxlength="6" style="text-transform: uppercase; letter-spacing: 4px; text-align: center;">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-submit" id="btn-connect-lobby" style="width: 100%;">
+                    ESTABLISH CONNECTION
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ============================================
+         GAME SCREEN (Hidden initially)
+         ============================================ -->
+    <div id="game-screen" class="hidden">
+        <!-- Main 3D Canvas Container -->
+        <div id="globe-container"></div>
+    
+        <!-- Scanline Overlay -->
+        <div id="scanlines"></div>
+    
+        <!-- Top HUD Bar -->
+        <header id="top-hud">
+            <div class="hud-section hud-left">
+                <div class="hud-logo">
+                    <span class="logo-icon">◉</span>
+                    <span class="logo-text">STRATCOM</span>
+                </div>
+                <div class="hud-date" id="game-date">2025.01.01</div>
+            </div>
+            <div class="hud-section hud-center">
+                <div class="hud-title">GLOBAL COMMAND INTERFACE</div>
+                <div class="hud-status" id="connection-status">
+                    <span class="status-dot"></span>
+                    <span class="status-text">INITIALIZING...</span>
+                </div>
+            </div>
+            <div class="hud-section hud-right">
+                <div class="hud-player" id="player-info">
+                    <span class="player-label">OPERATOR:</span>
+                    <span class="player-name" id="player-name">UNASSIGNED</span>
+                </div>
+                <button class="hud-btn" id="btn-menu">MENU</button>
+            </div>
+        </header>
+    
+        <!-- Left Sidebar - Nation Info -->
+        <aside id="sidebar-left" class="sidebar">
+            <div class="sidebar-header">
+                <span class="sidebar-title">NATION STATUS</span>
+                <span class="sidebar-icon">▼</span>
+            </div>
+            <div class="sidebar-content" id="nation-panel">
+                <div class="panel-placeholder">
+                    <span class="placeholder-icon">⊕</span>
+                    <span class="placeholder-text">SELECT A NATION</span>
+                </div>
+            </div>
+        </aside>
+    
+        <!-- Right Sidebar - Territory Info -->
+        <aside id="sidebar-right" class="sidebar">
+            <div class="sidebar-header">
+                <span class="sidebar-title">TERRITORY INTEL</span>
+                <span class="sidebar-icon">▼</span>
+            </div>
+            <div class="sidebar-content" id="territory-panel">
+                <div class="panel-placeholder">
+                    <span class="placeholder-icon">◎</span>
+                    <span class="placeholder-text">HOVER OVER TERRITORY</span>
+                </div>
+            </div>
+        </aside>
+    
+        <!-- Bottom HUD Bar -->
+        <footer id="bottom-hud">
+            <div class="hud-section hud-left">
+                <div class="coord-display">
+                    <span class="coord-label">LAT:</span>
+                    <span class="coord-value" id="lat-value">---.--</span>
+                    <span class="coord-label">LON:</span>
+                    <span class="coord-value" id="lon-value">---.--</span>
+                </div>
+            </div>
+            <div class="hud-section hud-center">
+                <div class="game-controls">
+                    <button class="control-btn" id="btn-pause" title="Pause">⏸</button>
+                    <button class="control-btn" id="btn-play" title="Play">▶</button>
+                    <button class="control-btn" id="btn-fast" title="Fast Forward">⏩</button>
+                </div>
+                <div class="speed-indicator">
+                    <span class="speed-label">SPEED:</span>
+                    <span class="speed-value" id="game-speed">PAUSED</span>
+                </div>
+            </div>
+            <div class="hud-section hud-right">
+                <div class="zoom-display">
+                    <span class="zoom-label">ZOOM:</span>
+                    <span class="zoom-value" id="zoom-level">1.0x</span>
+                </div>
+                <div class="fps-display">
+                    <span class="fps-label">FPS:</span>
+                    <span class="fps-value" id="fps-value">--</span>
+                </div>
+            </div>
+        </footer>
+    
+        <!-- Tooltip for territory hover -->
+        <div id="tooltip" class="tooltip hidden">
+            <div class="tooltip-header">
+                <span class="tooltip-name" id="tooltip-name">Territory</span>
+                <span class="tooltip-flag" id="tooltip-flag">🏴</span>
+            </div>
+            <div class="tooltip-body">
+                <div class="tooltip-row">
+                    <span class="tooltip-label">Owner:</span>
+                    <span class="tooltip-value" id="tooltip-owner">Unknown</span>
+                </div>
+                <div class="tooltip-row">
+                    <span class="tooltip-label">Population:</span>
+                    <span class="tooltip-value" id="tooltip-pop">--</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- End Game Screen -->
+    
     <!-- Loading Screen -->
-    <div id="loading-screen">
+    <div id="loading-screen" class="hidden">
         <div class="loading-content">
             <div class="loading-logo">STRATCOM</div>
             <div class="loading-bar">
@@ -131,6 +393,11 @@
             <div class="loading-text" id="loading-text">INITIALIZING SYSTEMS...</div>
         </div>
     </div>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     
     <!-- Scripts -->
     <script type="importmap">

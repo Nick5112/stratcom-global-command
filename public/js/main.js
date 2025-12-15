@@ -7,6 +7,7 @@ import { GlobeRenderer } from './core/GlobeRenderer.js';
 import { MapManager } from './core/MapManager.js';
 import { InputHandler } from './core/InputHandler.js';
 import { HUDController } from './core/HUDController.js';
+import { MenuController } from './core/MenuController.js';
 import { GAME_CONFIG } from './config/firebase.config.js';
 
 class StratcomGame {
@@ -15,8 +16,10 @@ class StratcomGame {
         this.map = null;
         this.input = null;
         this.hud = null;
+        this.menu = null;
         
         // Game state
+        this.gameState = null;
         this.gameDate = { ...GAME_CONFIG.START_DATE };
         this.gameSpeed = 0;
         this.lastTick = 0;
@@ -26,10 +29,94 @@ class StratcomGame {
     }
     
     /**
-     * Initialize the game
+     * Initialize the application (menu first)
      */
     async init() {
-        console.log('STRATCOM Global Command initializing...');
+        console.log('STRATCOM Global Command starting...');
+        
+        // Initialize menu controller
+        this.menu = new MenuController();
+        
+        // Set up callbacks from menu
+        this.menu.onStartGame = (config) => this.startNewGame(config);
+        this.menu.onLoadGame = (gameData) => this.loadSavedGame(gameData);
+        this.menu.onJoinMultiplayer = (lobbyData) => this.joinMultiplayer(lobbyData);
+        
+        // Initialize menu (will show main menu)
+        this.menu.init();
+    }
+    
+    /**
+     * Start a new game with given configuration
+     * @param {Object} config - Game configuration
+     */
+    async startNewGame(config) {
+        console.log('Starting new game:', config);
+        
+        // Hide menu, show game screen
+        this.menu.hideMenu();
+        
+        // Store game state
+        this.gameState = {
+            id: null,
+            name: config.name || 'OPERATION ' + Date.now(),
+            playerNation: config.nation,
+            difficulty: config.difficulty,
+            isMultiplayer: false,
+            createdAt: new Date().toISOString()
+        };
+        
+        // Reset date to start date
+        this.gameDate = { ...GAME_CONFIG.START_DATE };
+        
+        // Initialize game world
+        await this.initializeGameWorld();
+    }
+    
+    /**
+     * Load a saved game
+     * @param {Object} gameData - Saved game data
+     */
+    async loadSavedGame(gameData) {
+        console.log('Loading saved game:', gameData);
+        
+        // Hide menu, show game screen
+        this.menu.hideMenu();
+        
+        // Restore game state
+        this.gameState = gameData;
+        this.gameDate = gameData.gameDate || { ...GAME_CONFIG.START_DATE };
+        
+        // Initialize game world with saved state
+        await this.initializeGameWorld();
+    }
+    
+    /**
+     * Join a multiplayer game
+     * @param {Object} lobbyData - Multiplayer lobby data
+     */
+    async joinMultiplayer(lobbyData) {
+        console.log('Joining multiplayer:', lobbyData);
+        
+        // Hide menu, show game screen
+        this.menu.hideMenu();
+        
+        this.gameState = {
+            ...lobbyData,
+            isMultiplayer: true
+        };
+        
+        this.gameDate = lobbyData.gameDate || { ...GAME_CONFIG.START_DATE };
+        
+        // Initialize game world for multiplayer
+        await this.initializeGameWorld();
+    }
+    
+    /**
+     * Initialize the game world (globe, map, HUD)
+     */
+    async initializeGameWorld() {
+        console.log('STRATCOM Global Command initializing game world...');
         
         // Initialize HUD first for loading updates
         this.hud = new HUDController();
@@ -374,23 +461,66 @@ class StratcomGame {
     }
     
     /**
-     * Clean up
+     * Save current game state
+     * @returns {Object} Current game state
      */
-    dispose() {
+    getCurrentGameState() {
+        return {
+            ...this.gameState,
+            gameDate: { ...this.gameDate },
+            gameSpeed: this.gameSpeed,
+            lastSaved: new Date().toISOString()
+        };
+    }
+    
+    /**
+     * Return to main menu
+     */
+    async returnToMenu() {
+        // Pause the game
+        this.setGameSpeed(0);
+        
+        // Cleanup current game
+        this.disposeGame();
+        
+        // Show menu screen, hide game screen
+        if (this.menu) {
+            this.menu.showMenu();
+        }
+    }
+    
+    /**
+     * Clean up game resources (but keep menu)
+     */
+    disposeGame() {
         if (this.statsInterval) {
             clearInterval(this.statsInterval);
+            this.statsInterval = null;
         }
         
         this.input?.dispose();
         this.globe?.dispose();
+        
+        this.globe = null;
+        this.map = null;
+        this.input = null;
+        this.hud = null;
+    }
+    
+    /**
+     * Full cleanup
+     */
+    dispose() {
+        this.disposeGame();
+        this.menu = null;
     }
 }
 
 // Initialize on DOM load
 document.addEventListener('DOMContentLoaded', () => {
-    const game = new StratcomGame();
-    game.init();
+    const app = new StratcomGame();
+    app.init();
     
     // Make accessible for debugging
-    window.stratcom = game;
+    window.stratcom = app;
 });
