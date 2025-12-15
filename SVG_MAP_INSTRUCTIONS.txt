@@ -1,0 +1,16 @@
+﻿Instructions for adding your custom world map:
+
+1. Open your MapChart_Map.svg file in a text editor
+2. Copy the ENTIRE content
+3. Replace the content of: C:\Projects\grand-strategy-game\public\assets\earth-map.svg
+
+The SVG should have:
+- Each country/region as a <path> element
+- Each path should have an 'id' attribute (like 'US', 'RU', 'CN')
+- The paths will be used for game territory logic
+
+The SVGGlobeRenderer.js will:
+- Parse each path as a separate game region
+- Allow ownership changes (player, ally, hostile, neutral)
+- Color territories based on who owns them
+- Support click detection for territory selection
