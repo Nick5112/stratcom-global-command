@@ -6,12 +6,12 @@
  */
 
 export const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyCwm6URBOZqa7RG2WyqjYpcB-fTt2TOu14",
+    authDomain: "stratcom-global-cmd.firebaseapp.com",
+    projectId: "stratcom-global-cmd",
+    storageBucket: "stratcom-global-cmd.firebasestorage.app",
+    messagingSenderId: "546213515536",
+    appId: "1:546213515536:web:7178a4229352c2d68ed595"
 };
 
 // Firestore collection names
