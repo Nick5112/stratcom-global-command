@@ -582,7 +582,7 @@
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             container.appendChild(renderer.domElement);
             
-            // Controls
+            // Controls - disabled manual interaction, auto-rotate only
             controls = new OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
             controls.dampingFactor = 0.05;
@@ -590,6 +590,7 @@
             controls.autoRotateSpeed = 0.3;
             controls.enableZoom = false;
             controls.enablePan = false;
+            controls.enableRotate = false; // Disable manual rotation
             
             // Create Earth
             createEarth();
@@ -626,36 +627,160 @@
         function createEarth() {
             const geometry = new THREE.SphereGeometry(1, 64, 64);
             
-            // Create procedural texture
+            // Create texture canvas
             const canvas = document.createElement('canvas');
             canvas.width = 2048;
             canvas.height = 1024;
             const ctx = canvas.getContext('2d');
             
-            // Ocean
+            // Fill ocean background
             ctx.fillStyle = '#0a1520';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            // Draw continents (simplified)
-            ctx.fillStyle = '#1a2a20';
-            ctx.strokeStyle = '#00ff88';
-            ctx.lineWidth = 2;
+            // Try to load SVG map, fall back to procedural if not available
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
             
-            // Draw grid lines
-            ctx.strokeStyle = '#00ff8822';
+            img.onload = function() {
+                // Draw the SVG map
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                
+                // Apply color transformation to match theme
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const data = imageData.data;
+                
+                for (let i = 0; i < data.length; i += 4) {
+                    const r = data[i];
+                    const g = data[i + 1];
+                    const b = data[i + 2];
+                    
+                    // Convert to grayscale then tint with theme colors
+                    const brightness = (r + g + b) / 3;
+                    
+                    if (brightness > 200) {
+                        // Land - dark green tint
+                        data[i] = 21;      // R
+                        data[i + 1] = 42;  // G
+                        data[i + 2] = 32;  // B
+                    } else if (brightness > 100) {
+                        // Borders/features - bright green
+                        data[i] = 0;
+                        data[i + 1] = 255;
+                        data[i + 2] = 136;
+                    } else {
+                        // Ocean - dark blue
+                        data[i] = 10;
+                        data[i + 1] = 21;
+                        data[i + 2] = 32;
+                    }
+                }
+                
+                ctx.putImageData(imageData, 0, 0);
+                
+                // Add ice cap overlays
+                addIceCaps(ctx, canvas.width, canvas.height);
+                
+                // Add grid lines
+                addGridLines(ctx, canvas.width, canvas.height);
+                
+                // Update texture
+                texture.needsUpdate = true;
+            };
+            
+            img.onerror = function() {
+                // Fall back to procedural generation
+                console.log('SVG map not found, using procedural texture');
+                drawProceduralEarth(ctx, canvas.width, canvas.height);
+                texture.needsUpdate = true;
+            };
+            
+            // Try loading the SVG
+            img.src = 'assets/earth-map.svg';
+            
+            // Initial procedural draw (will be replaced if SVG loads)
+            drawProceduralEarth(ctx, canvas.width, canvas.height);
+            
+            const texture = new THREE.CanvasTexture(canvas);
+            
+            const material = new THREE.MeshPhongMaterial({
+                map: texture,
+                bumpScale: 0.02,
+                specular: new THREE.Color(0x333333),
+                shininess: 5
+            });
+            
+            globe = new THREE.Mesh(geometry, material);
+            scene.add(globe);
+            
+            // Add lights
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+            directionalLight.position.set(5, 3, 5);
+            scene.add(directionalLight);
+        }
+        
+        function addIceCaps(ctx, width, height) {
+            // North pole ice cap - covers top ~15% with gradient fade
+            const northCapGradient = ctx.createLinearGradient(0, 0, 0, height * 0.18);
+            northCapGradient.addColorStop(0, 'rgba(200, 220, 255, 0.95)');
+            northCapGradient.addColorStop(0.3, 'rgba(180, 200, 240, 0.85)');
+            northCapGradient.addColorStop(0.6, 'rgba(150, 180, 220, 0.6)');
+            northCapGradient.addColorStop(0.8, 'rgba(100, 150, 200, 0.3)');
+            northCapGradient.addColorStop(1, 'rgba(50, 100, 150, 0)');
+            
+            ctx.fillStyle = northCapGradient;
+            ctx.fillRect(0, 0, width, height * 0.18);
+            
+            // Add irregular ice edge
+            ctx.fillStyle = 'rgba(180, 210, 240, 0.7)';
+            ctx.beginPath();
+            ctx.moveTo(0, height * 0.12);
+            for (let x = 0; x <= width; x += 50) {
+                const y = height * 0.12 + Math.sin(x * 0.02) * 15 + Math.random() * 20;
+                ctx.lineTo(x, y);
+            }
+            ctx.lineTo(width, 0);
+            ctx.lineTo(0, 0);
+            ctx.closePath();
+            ctx.fill();
+            
+            // South pole ice cap - smaller
+            const southCapGradient = ctx.createLinearGradient(0, height, 0, height * 0.9);
+            southCapGradient.addColorStop(0, 'rgba(200, 220, 255, 0.9)');
+            southCapGradient.addColorStop(0.5, 'rgba(150, 180, 220, 0.5)');
+            southCapGradient.addColorStop(1, 'rgba(100, 150, 200, 0)');
+            
+            ctx.fillStyle = southCapGradient;
+            ctx.fillRect(0, height * 0.9, width, height * 0.1);
+        }
+        
+        function addGridLines(ctx, width, height) {
+            ctx.strokeStyle = 'rgba(0, 255, 136, 0.15)';
             ctx.lineWidth = 1;
+            
+            // Latitude lines
             for (let i = 0; i <= 18; i++) {
                 ctx.beginPath();
-                ctx.moveTo(0, i * (canvas.height / 18));
-                ctx.lineTo(canvas.width, i * (canvas.height / 18));
+                ctx.moveTo(0, i * (height / 18));
+                ctx.lineTo(width, i * (height / 18));
                 ctx.stroke();
             }
+            
+            // Longitude lines
             for (let i = 0; i <= 36; i++) {
                 ctx.beginPath();
-                ctx.moveTo(i * (canvas.width / 36), 0);
-                ctx.lineTo(i * (canvas.width / 36), canvas.height);
+                ctx.moveTo(i * (width / 36), 0);
+                ctx.lineTo(i * (width / 36), height);
                 ctx.stroke();
             }
+        }
+        
+        function drawProceduralEarth(ctx, width, height) {
+            // Ocean
+            ctx.fillStyle = '#0a1520';
+            ctx.fillRect(0, 0, width, height);
             
             // Simplified continents
             const continents = [
@@ -686,25 +811,11 @@
                 ctx.stroke();
             });
             
-            const texture = new THREE.CanvasTexture(canvas);
+            // Add ice caps
+            addIceCaps(ctx, width, height);
             
-            const material = new THREE.MeshPhongMaterial({
-                map: texture,
-                bumpScale: 0.02,
-                specular: new THREE.Color(0x333333),
-                shininess: 5
-            });
-            
-            globe = new THREE.Mesh(geometry, material);
-            scene.add(globe);
-            
-            // Add lights
-            const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
-            scene.add(ambientLight);
-            
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-            directionalLight.position.set(5, 3, 5);
-            scene.add(directionalLight);
+            // Add grid lines
+            addGridLines(ctx, width, height);
         }
         
         function createAtmosphere() {
