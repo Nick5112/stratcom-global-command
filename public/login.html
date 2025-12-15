@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STRATCOM - Authentication</title>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/auth.css">
+</head>
+<body>
+    <div class="crt-overlay"></div>
+    <div class="grid-background"></div>
+    
+    <!-- Header Bar -->
+    <header class="auth-header">
+        <div class="header-left">
+            <span class="logo-icon">◉</span>
+            <span class="logo-text">STRATCOM</span>
+        </div>
+        <div class="header-center">
+            <span class="header-title">SECURE AUTHENTICATION PORTAL</span>
+        </div>
+        <div class="header-right">
+            <span class="classification">TOP SECRET // NOFORN</span>
+        </div>
+    </header>
+
+    <main class="auth-container">
+        <!-- Login Form -->
+        <div class="auth-panel" id="login-panel">
+            <div class="panel-header">
+                <div class="panel-icon">🔐</div>
+                <h1 class="panel-title">OPERATOR LOGIN</h1>
+                <p class="panel-subtitle">Enter credentials to access command systems</p>
+            </div>
+
+            <form class="auth-form" id="login-form" onsubmit="return handleLogin(event)">
+                <div class="form-group">
+                    <label class="form-label">
+                        <span class="label-icon">▸</span>
+                        OPERATOR ID (EMAIL)
+                    </label>
+                    <input type="email" id="login-email" class="form-input" placeholder="operator@stratcom.mil" required autocomplete="email">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        <span class="label-icon">▸</span>
+                        ACCESS CODE (PASSWORD)
+                    </label>
+                    <input type="password" id="login-password" class="form-input" placeholder="••••••••••••" required autocomplete="current-password">
+                </div>
+
+                <div class="form-error" id="login-error"></div>
+
+                <button type="submit" class="auth-btn primary" id="login-btn">
+                    <span class="btn-text">AUTHENTICATE</span>
+                    <span class="btn-loader"></span>
+                </button>
+
+                <div class="divider">
+                    <span>OR</span>
+                </div>
+
+                <button type="button" class="auth-btn google" onclick="handleGoogleLogin()">
+                    <svg class="google-icon" viewBox="0 0 24 24" width="20" height="20">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    <span>AUTHENTICATE WITH GOOGLE</span>
+                </button>
+            </form>
+
+            <div class="panel-footer">
+                <a href="#" onclick="showPanel('register-panel')" class="auth-link">NEW OPERATOR? REGISTER</a>
+                <span class="separator">|</span>
+                <a href="#" onclick="showPanel('reset-panel')" class="auth-link">FORGOT ACCESS CODE?</a>
+            </div>
+        </div>
+
+        <!-- Register Form -->
+        <div class="auth-panel hidden" id="register-panel">
+            <div class="panel-header">
+                <div class="panel-icon">📋</div>
+                <h1 class="panel-title">OPERATOR REGISTRATION</h1>
+                <p class="panel-subtitle">Create new operator credentials</p>
+            </div>
+
+            <form class="auth-form" id="register-form" onsubmit="return handleRegister(event)">
+                <div class="form-group">
+                    <label class="form-label">
+                        <span class="label-icon">▸</span>
+                        OPERATOR CALLSIGN
+                    </label>
+                    <input type="text" id="register-name" class="form-input" placeholder="COMMANDER_ALPHA" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        <span class="label-icon">▸</span>
+                        OPERATOR ID (EMAIL)
+                    </label>
+                    <input type="email" id="register-email" class="form-input" placeholder="operator@stratcom.mil" required autocomplete="email">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        <span class="label-icon">▸</span>
+                        ACCESS CODE (MIN 8 CHARS)
+                    </label>
+                    <input type="password" id="register-password" class="form-input" placeholder="••••••••••••" required minlength="8" autocomplete="new-password">
+                    <div class="password-strength" id="password-strength"></div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        <span class="label-icon">▸</span>
+                        CONFIRM ACCESS CODE
+                    </label>
+                    <input type="password" id="register-confirm" class="form-input" placeholder="••••••••••••" required autocomplete="new-password">
+                </div>
+
+                <div class="form-error" id="register-error"></div>
+
+                <button type="submit" class="auth-btn primary" id="register-btn">
+                    <span class="btn-text">CREATE OPERATOR ACCOUNT</span>
+                    <span class="btn-loader"></span>
+                </button>
+            </form>
+
+            <div class="panel-footer">
+                <a href="#" onclick="showPanel('login-panel')" class="auth-link">← RETURN TO LOGIN</a>
+            </div>
+        </div>
+
+        <!-- Password Reset Form -->
+        <div class="auth-panel hidden" id="reset-panel">
+            <div class="panel-header">
+                <div class="panel-icon">🔑</div>
+                <h1 class="panel-title">ACCESS CODE RECOVERY</h1>
+                <p class="panel-subtitle">Request password reset via secure channel</p>
+            </div>
+
+            <form class="auth-form" id="reset-form" onsubmit="return handleReset(event)">
+                <div class="form-group">
+                    <label class="form-label">
+                        <span class="label-icon">▸</span>
+                        OPERATOR ID (EMAIL)
+                    </label>
+                    <input type="email" id="reset-email" class="form-input" placeholder="operator@stratcom.mil" required autocomplete="email">
+                </div>
+
+                <div class="form-error" id="reset-error"></div>
+                <div class="form-success" id="reset-success"></div>
+
+                <button type="submit" class="auth-btn primary" id="reset-btn">
+                    <span class="btn-text">REQUEST RESET CODE</span>
+                    <span class="btn-loader"></span>
+                </button>
+            </form>
+
+            <div class="panel-footer">
+                <a href="#" onclick="showPanel('login-panel')" class="auth-link">← RETURN TO LOGIN</a>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="auth-footer">
+        <div class="footer-left">
+            <span class="footer-status">
+                <span class="status-dot" id="connection-dot"></span>
+                <span id="connection-text">CONNECTING...</span>
+            </span>
+        </div>
+        <div class="footer-center">
+            <span>STRATCOM DEFENSE NETWORK © 2025</span>
+        </div>
+        <div class="footer-right">
+            <span class="footer-time" id="system-time">00:00:00 UTC</span>
+        </div>
+    </footer>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCwm6URBOZqa7RG2WyqjYpcB-fTt2TOu14",
+            authDomain: "stratcom-global-cmd.firebaseapp.com",
+            projectId: "stratcom-global-cmd",
+            storageBucket: "stratcom-global-cmd.firebasestorage.app",
+            messagingSenderId: "546213515536",
+            appId: "1:546213515536:web:7178a4229352c2d68ed595"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        // Check if already logged in
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                // Already logged in, redirect to main menu
+                window.location.href = 'menu.html';
+            }
+            updateConnectionStatus(true);
+        });
+
+        // Panel switching
+        function showPanel(panelId) {
+            document.querySelectorAll('.auth-panel').forEach(p => p.classList.add('hidden'));
+            document.getElementById(panelId).classList.remove('hidden');
+            clearErrors();
+        }
+
+        function clearErrors() {
+            document.querySelectorAll('.form-error').forEach(e => e.textContent = '');
+            document.querySelectorAll('.form-success').forEach(e => e.textContent = '');
+        }
+
+        function setLoading(btnId, loading) {
+            const btn = document.getElementById(btnId);
+            if (loading) {
+                btn.classList.add('loading');
+                btn.disabled = true;
+            } else {
+                btn.classList.remove('loading');
+                btn.disabled = false;
+            }
+        }
+
+        function showError(elementId, message) {
+            document.getElementById(elementId).textContent = message;
+        }
+
+        // Login handler
+        async function handleLogin(e) {
+            e.preventDefault();
+            clearErrors();
+            setLoading('login-btn', true);
+
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+
+            try {
+                await auth.signInWithEmailAndPassword(email, password);
+                window.location.href = 'menu.html';
+            } catch (error) {
+                showError('login-error', getErrorMessage(error));
+                setLoading('login-btn', false);
+            }
+            return false;
+        }
+
+        // Google login
+        async function handleGoogleLogin() {
+            clearErrors();
+            try {
+                const provider = new firebase.auth.GoogleAuthProvider();
+                await auth.signInWithPopup(provider);
+                window.location.href = 'menu.html';
+            } catch (error) {
+                showError('login-error', getErrorMessage(error));
+            }
+        }
+
+        // Register handler
+        async function handleRegister(e) {
+            e.preventDefault();
+            clearErrors();
+
+            const name = document.getElementById('register-name').value;
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+            const confirm = document.getElementById('register-confirm').value;
+
+            if (password !== confirm) {
+                showError('register-error', 'ACCESS CODES DO NOT MATCH');
+                return false;
+            }
+
+            if (password.length < 8) {
+                showError('register-error', 'ACCESS CODE MUST BE AT LEAST 8 CHARACTERS');
+                return false;
+            }
+
+            setLoading('register-btn', true);
+
+            try {
+                const result = await auth.createUserWithEmailAndPassword(email, password);
+                await result.user.updateProfile({ displayName: name });
+                window.location.href = 'menu.html';
+            } catch (error) {
+                showError('register-error', getErrorMessage(error));
+                setLoading('register-btn', false);
+            }
+            return false;
+        }
+
+        // Password reset handler
+        async function handleReset(e) {
+            e.preventDefault();
+            clearErrors();
+            setLoading('reset-btn', true);
+
+            const email = document.getElementById('reset-email').value;
+
+            try {
+                await auth.sendPasswordResetEmail(email);
+                document.getElementById('reset-success').textContent = 
+                    'RESET CODE TRANSMITTED - CHECK YOUR SECURE CHANNEL';
+                setLoading('reset-btn', false);
+            } catch (error) {
+                showError('reset-error', getErrorMessage(error));
+                setLoading('reset-btn', false);
+            }
+            return false;
+        }
+
+        // Password strength indicator
+        document.getElementById('register-password')?.addEventListener('input', (e) => {
+            const strength = document.getElementById('password-strength');
+            const password = e.target.value;
+            
+            let score = 0;
+            if (password.length >= 8) score++;
+            if (password.length >= 12) score++;
+            if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score++;
+            if (/\d/.test(password)) score++;
+            if (/[^a-zA-Z0-9]/.test(password)) score++;
+
+            const levels = ['WEAK', 'FAIR', 'GOOD', 'STRONG', 'EXCELLENT'];
+            const colors = ['#ff4444', '#ffaa00', '#ffff00', '#88ff00', '#00ff88'];
+            
+            strength.textContent = levels[Math.min(score, 4)];
+            strength.style.color = colors[Math.min(score, 4)];
+        });
+
+        // Error message translation
+        function getErrorMessage(error) {
+            const messages = {
+                'auth/email-already-in-use': 'OPERATOR ID ALREADY REGISTERED',
+                'auth/invalid-email': 'INVALID OPERATOR ID FORMAT',
+                'auth/operation-not-allowed': 'OPERATION NOT PERMITTED',
+                'auth/weak-password': 'ACCESS CODE TOO WEAK',
+                'auth/user-disabled': 'OPERATOR ACCOUNT DISABLED',
+                'auth/user-not-found': 'OPERATOR NOT FOUND IN DATABASE',
+                'auth/wrong-password': 'INVALID ACCESS CODE',
+                'auth/popup-closed-by-user': 'AUTHENTICATION CANCELLED',
+                'auth/network-request-failed': 'NETWORK ERROR - CHECK CONNECTION'
+            };
+            return messages[error.code] || 'AUTHENTICATION ERROR: ' + error.message;
+        }
+
+        // Connection status
+        function updateConnectionStatus(online) {
+            const dot = document.getElementById('connection-dot');
+            const text = document.getElementById('connection-text');
+            if (online) {
+                dot.classList.add('online');
+                text.textContent = 'SECURE CONNECTION ACTIVE';
+            } else {
+                dot.classList.remove('online');
+                text.textContent = 'CONNECTION LOST';
+            }
+        }
+
+        // Update time
+        function updateTime() {
+            const now = new Date();
+            const timeStr = now.toISOString().split('T')[1].split('.')[0] + ' UTC';
+            document.getElementById('system-time').textContent = timeStr;
+        }
+        setInterval(updateTime, 1000);
+        updateTime();
+    </script>
+</body>
+</html>

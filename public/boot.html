@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STRATCOM - System Boot</title>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000;
+            color: #00ff88;
+            font-family: 'Share Tech Mono', monospace;
+            min-height: 100vh;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* CRT Screen Effect */
+        .crt-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .crt-overlay::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.15),
+                rgba(0, 0, 0, 0.15) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+        }
+
+        .crt-overlay::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.4) 100%);
+        }
+
+        /* Flicker animation */
+        @keyframes flicker {
+            0%, 100% { opacity: 1; }
+            92% { opacity: 1; }
+            93% { opacity: 0.8; }
+            94% { opacity: 1; }
+            97% { opacity: 0.9; }
+        }
+
+        .boot-container {
+            width: 100%;
+            max-width: 900px;
+            padding: 40px;
+            animation: flicker 4s infinite;
+        }
+
+        /* Boot header */
+        .boot-header {
+            text-align: center;
+            margin-bottom: 40px;
+            border: 2px solid #00ff88;
+            padding: 20px;
+            position: relative;
+        }
+
+        .boot-header::before,
+        .boot-header::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #00ff88;
+        }
+
+        .boot-header::before {
+            top: -2px;
+            left: -2px;
+            border-right: none;
+            border-bottom: none;
+        }
+
+        .boot-header::after {
+            bottom: -2px;
+            right: -2px;
+            border-left: none;
+            border-top: none;
+        }
+
+        .boot-logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 48px;
+            font-weight: 700;
+            letter-spacing: 8px;
+            text-shadow: 0 0 20px #00ff88, 0 0 40px #00ff88;
+            margin-bottom: 10px;
+        }
+
+        .boot-subtitle {
+            font-size: 14px;
+            color: #00cc6a;
+            letter-spacing: 4px;
+        }
+
+        .classification {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 10px;
+            color: #ff4444;
+            letter-spacing: 2px;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        /* Boot console */
+        .boot-console {
+            background: rgba(0, 20, 10, 0.8);
+            border: 1px solid #00ff88;
+            padding: 20px;
+            height: 350px;
+            overflow: hidden;
+            font-size: 13px;
+            line-height: 1.6;
+            position: relative;
+        }
+
+        .boot-console::before {
+            content: 'SYSTEM TERMINAL';
+            position: absolute;
+            top: -10px;
+            left: 20px;
+            background: #000;
+            padding: 0 10px;
+            font-size: 10px;
+            color: #00cc6a;
+            letter-spacing: 2px;
+        }
+
+        .console-line {
+            opacity: 0;
+            transform: translateY(10px);
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .console-line.visible {
+            opacity: 1;
+            transform: translateY(0);
+            transition: all 0.1s ease;
+        }
+
+        .console-line.success {
+            color: #00ff88;
+        }
+
+        .console-line.warning {
+            color: #ffaa00;
+        }
+
+        .console-line.error {
+            color: #ff4444;
+        }
+
+        .console-line.info {
+            color: #00aaff;
+        }
+
+        .console-line.system {
+            color: #888;
+        }
+
+        .console-line .status {
+            float: right;
+            font-weight: bold;
+        }
+
+        .console-line .status.ok {
+            color: #00ff88;
+        }
+
+        .console-line .status.warn {
+            color: #ffaa00;
+        }
+
+        /* Progress bar */
+        .progress-container {
+            margin-top: 30px;
+            border: 1px solid #00ff88;
+            padding: 3px;
+            position: relative;
+        }
+
+        .progress-container::before {
+            content: 'BOOT PROGRESS';
+            position: absolute;
+            top: -10px;
+            left: 20px;
+            background: #000;
+            padding: 0 10px;
+            font-size: 10px;
+            color: #00cc6a;
+            letter-spacing: 2px;
+        }
+
+        .progress-bar {
+            height: 25px;
+            background: linear-gradient(90deg, #00ff88, #00cc6a);
+            width: 0%;
+            transition: width 0.3s ease;
+            position: relative;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+        }
+
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                90deg,
+                transparent,
+                transparent 10px,
+                rgba(0, 0, 0, 0.2) 10px,
+                rgba(0, 0, 0, 0.2) 20px
+            );
+        }
+
+        .progress-text {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: 12px;
+        }
+
+        .progress-percent {
+            color: #00ff88;
+            font-weight: bold;
+        }
+
+        .progress-status {
+            color: #00cc6a;
+            letter-spacing: 1px;
+        }
+
+        /* Skip button */
+        .skip-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: transparent;
+            border: 1px solid #00ff8855;
+            color: #00ff8855;
+            padding: 10px 20px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 12px;
+            cursor: pointer;
+            letter-spacing: 2px;
+            transition: all 0.3s ease;
+            z-index: 1001;
+        }
+
+        .skip-btn:hover {
+            border-color: #00ff88;
+            color: #00ff88;
+            background: rgba(0, 255, 136, 0.1);
+        }
+
+        /* Final message */
+        .boot-complete {
+            display: none;
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .boot-complete.visible {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .boot-complete h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 24px;
+            color: #00ff88;
+            text-shadow: 0 0 20px #00ff88;
+            margin-bottom: 20px;
+            letter-spacing: 4px;
+        }
+
+        .enter-btn {
+            background: transparent;
+            border: 2px solid #00ff88;
+            color: #00ff88;
+            padding: 15px 50px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 16px;
+            cursor: pointer;
+            letter-spacing: 4px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+        }
+
+        .enter-btn:hover {
+            background: #00ff88;
+            color: #000;
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.5);
+        }
+
+        /* Sound toggle */
+        .sound-toggle {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            background: transparent;
+            border: 1px solid #00ff8855;
+            color: #00ff8855;
+            padding: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 1001;
+        }
+
+        .sound-toggle:hover {
+            border-color: #00ff88;
+            color: #00ff88;
+        }
+    </style>
+</head>
+<body>
+    <div class="crt-overlay"></div>
+    
+    <div class="boot-container">
+        <header class="boot-header">
+            <span class="classification">TOP SECRET // NOFORN</span>
+            <div class="boot-logo">STRATCOM</div>
+            <div class="boot-subtitle">STRATEGIC COMMAND GLOBAL INTERFACE v2.1.7</div>
+        </header>
+
+        <div class="boot-console" id="console">
+            <!-- Boot messages will be inserted here -->
+        </div>
+
+        <div class="progress-container">
+            <div class="progress-bar" id="progress-bar"></div>
+        </div>
+        <div class="progress-text">
+            <span class="progress-percent" id="progress-percent">0%</span>
+            <span class="progress-status" id="progress-status">INITIALIZING...</span>
+        </div>
+
+        <div class="boot-complete" id="boot-complete">
+            <h2>SYSTEM READY</h2>
+            <button class="enter-btn" onclick="enterSystem()">ENTER COMMAND CENTER</button>
+        </div>
+    </div>
+
+    <button class="skip-btn" id="skip-btn" onclick="skipBoot()">SKIP BOOT [ESC]</button>
+    <button class="sound-toggle" id="sound-toggle" title="Toggle Sound">🔇</button>
+
+    <script>
+        // Boot sequence messages
+        const bootMessages = [
+            { text: 'STRATCOM DEFENSE NETWORK v2.1.7', type: 'system', delay: 100 },
+            { text: 'Copyright (c) 2025 United States Department of Defense', type: 'system', delay: 50 },
+            { text: '═══════════════════════════════════════════════════════════════', type: 'system', delay: 50 },
+            { text: '', type: 'system', delay: 200 },
+            { text: 'Initializing secure boot sequence...', type: 'info', delay: 300 },
+            { text: 'BIOS Version: STRATCOM-UEFI-SEC-4.2.1', type: 'system', delay: 100 },
+            { text: 'Memory Test: 2,147,483,648 KB [OK]', type: 'success', delay: 200, status: 'OK', progress: 5 },
+            { text: '', type: 'system', delay: 100 },
+            { text: 'Loading STRATCOM Kernel...', type: 'info', delay: 400, progress: 10 },
+            { text: '  ├─ kernel-stratcom-6.2.1-secure.img', type: 'system', delay: 150 },
+            { text: '  ├─ initramfs-stratcom.img', type: 'system', delay: 150 },
+            { text: '  └─ crypto-module-aes256.ko', type: 'system', delay: 150, status: 'LOADED', progress: 15 },
+            { text: '', type: 'system', delay: 100 },
+            { text: 'Initializing hardware abstraction layer...', type: 'info', delay: 300 },
+            { text: '  [HAL] GPU Subsystem: NVIDIA RTX Military Grade', type: 'system', delay: 100, status: 'OK' },
+            { text: '  [HAL] Network Interface: Quantum-Encrypted Link', type: 'system', delay: 100, status: 'OK' },
+            { text: '  [HAL] Secure Storage: 48 PB Classified Array', type: 'system', delay: 100, status: 'OK', progress: 25 },
+            { text: '', type: 'system', delay: 100 },
+            { text: 'Establishing secure communications...', type: 'info', delay: 500 },
+            { text: '  ├─ Satellite Uplink Alpha: CONNECTED', type: 'success', delay: 200 },
+            { text: '  ├─ Satellite Uplink Beta: CONNECTED', type: 'success', delay: 200 },
+            { text: '  ├─ Satellite Uplink Gamma: CONNECTED', type: 'success', delay: 200 },
+            { text: '  └─ Submarine Cable Fallback: STANDBY', type: 'warning', delay: 200, progress: 35 },
+            { text: '', type: 'system', delay: 100 },
+            { text: 'Loading defense modules...', type: 'info', delay: 400 },
+            { text: '  [MOD] Global Surveillance Network', type: 'system', delay: 150, status: 'ACTIVE' },
+            { text: '  [MOD] Early Warning Radar Array', type: 'system', delay: 150, status: 'ACTIVE' },
+            { text: '  [MOD] Missile Defense Integration', type: 'system', delay: 150, status: 'ACTIVE' },
+            { text: '  [MOD] Naval Fleet Command Link', type: 'system', delay: 150, status: 'ACTIVE' },
+            { text: '  [MOD] Air Superiority Monitor', type: 'system', delay: 150, status: 'ACTIVE', progress: 50 },
+            { text: '', type: 'system', delay: 100 },
+            { text: 'Authenticating security protocols...', type: 'info', delay: 600 },
+            { text: '  RSA-4096 Key Exchange: VERIFIED', type: 'success', delay: 200 },
+            { text: '  AES-256 Encryption: ENABLED', type: 'success', delay: 200 },
+            { text: '  Quantum-Resistant Layer: ACTIVE', type: 'success', delay: 200 },
+            { text: '  Multi-Factor Authentication: REQUIRED', type: 'warning', delay: 200, progress: 65 },
+            { text: '', type: 'system', delay: 100 },
+            { text: 'Connecting to global command network...', type: 'info', delay: 800 },
+            { text: '  NORAD Integration: ONLINE', type: 'success', delay: 200 },
+            { text: '  NATO Command: LINKED', type: 'success', delay: 200 },
+            { text: '  Pacific Command: LINKED', type: 'success', delay: 200 },
+            { text: '  European Command: LINKED', type: 'success', delay: 200, progress: 80 },
+            { text: '', type: 'system', delay: 100 },
+            { text: 'Initializing 3D globe renderer...', type: 'info', delay: 400 },
+            { text: '  WebGL 2.0 Context: INITIALIZED', type: 'success', delay: 150 },
+            { text: '  Three.js Engine: LOADED', type: 'success', delay: 150 },
+            { text: '  Earth Texture Map: 8K LOADED', type: 'success', delay: 150 },
+            { text: '  Atmospheric Shader: COMPILED', type: 'success', delay: 150, progress: 90 },
+            { text: '', type: 'system', delay: 100 },
+            { text: 'Running final system diagnostics...', type: 'info', delay: 500 },
+            { text: '  CPU Load: 12%', type: 'system', delay: 100 },
+            { text: '  Memory Usage: 4.2 GB / 128 GB', type: 'system', delay: 100 },
+            { text: '  Network Latency: 23ms', type: 'system', delay: 100 },
+            { text: '  System Status: NOMINAL', type: 'success', delay: 100, progress: 95 },
+            { text: '', type: 'system', delay: 200 },
+            { text: '═══════════════════════════════════════════════════════════════', type: 'system', delay: 100 },
+            { text: 'STRATCOM GLOBAL COMMAND SYSTEM READY', type: 'success', delay: 300, progress: 100 },
+            { text: 'Authentication Required - Awaiting Operator Credentials', type: 'warning', delay: 200 },
+            { text: '', type: 'system', delay: 100 },
+        ];
+
+        let currentLine = 0;
+        let isSkipped = false;
+        const consoleEl = document.getElementById('console');
+        const progressBar = document.getElementById('progress-bar');
+        const progressPercent = document.getElementById('progress-percent');
+        const progressStatus = document.getElementById('progress-status');
+        const bootComplete = document.getElementById('boot-complete');
+        const skipBtn = document.getElementById('skip-btn');
+
+        function addConsoleLine(message) {
+            const line = document.createElement('div');
+            line.className = `console-line ${message.type}`;
+            
+            let text = message.text;
+            if (message.status) {
+                text += `<span class="status ${message.status === 'OK' || message.status === 'LOADED' || message.status === 'ACTIVE' ? 'ok' : 'warn'}">[${message.status}]</span>`;
+            }
+            line.innerHTML = text;
+            
+            consoleEl.appendChild(line);
+            
+            // Scroll to bottom
+            consoleEl.scrollTop = consoleEl.scrollHeight;
+            
+            // Trigger animation
+            requestAnimationFrame(() => {
+                line.classList.add('visible');
+            });
+
+            // Update progress
+            if (message.progress !== undefined) {
+                progressBar.style.width = message.progress + '%';
+                progressPercent.textContent = message.progress + '%';
+                updateProgressStatus(message.progress);
+            }
+        }
+
+        function updateProgressStatus(progress) {
+            if (progress < 20) progressStatus.textContent = 'LOADING KERNEL...';
+            else if (progress < 40) progressStatus.textContent = 'INITIALIZING HARDWARE...';
+            else if (progress < 60) progressStatus.textContent = 'LOADING MODULES...';
+            else if (progress < 80) progressStatus.textContent = 'CONNECTING NETWORKS...';
+            else if (progress < 100) progressStatus.textContent = 'FINALIZING...';
+            else progressStatus.textContent = 'BOOT COMPLETE';
+        }
+
+        function runBootSequence() {
+            if (isSkipped || currentLine >= bootMessages.length) {
+                finishBoot();
+                return;
+            }
+
+            const message = bootMessages[currentLine];
+            addConsoleLine(message);
+            currentLine++;
+
+            setTimeout(runBootSequence, message.delay);
+        }
+
+        function finishBoot() {
+            progressBar.style.width = '100%';
+            progressPercent.textContent = '100%';
+            progressStatus.textContent = 'BOOT COMPLETE';
+            bootComplete.classList.add('visible');
+            skipBtn.style.display = 'none';
+        }
+
+        function skipBoot() {
+            isSkipped = true;
+            // Show all remaining messages instantly
+            while (currentLine < bootMessages.length) {
+                addConsoleLine(bootMessages[currentLine]);
+                currentLine++;
+            }
+            finishBoot();
+        }
+
+        function enterSystem() {
+            // Redirect to login page
+            window.location.href = 'login.html';
+        }
+
+        // Keyboard shortcut
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') skipBoot();
+            if (e.key === 'Enter' && bootComplete.classList.contains('visible')) {
+                enterSystem();
+            }
+        });
+
+        // Start boot sequence
+        setTimeout(runBootSequence, 500);
+    </script>
+</body>
+</html>

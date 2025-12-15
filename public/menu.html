@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STRATCOM - Command Center</title>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/menu.css">
+</head>
+<body>
+    <div class="crt-overlay"></div>
+    
+    <!-- Header Bar -->
+    <header class="menu-header">
+        <div class="header-left">
+            <span class="logo-icon">◉</span>
+            <span class="logo-text">STRATCOM</span>
+        </div>
+        <div class="header-center">
+            <span class="header-title">STRATEGIC COMMAND CENTER</span>
+        </div>
+        <div class="header-right">
+            <div class="user-info" id="user-info">
+                <span class="user-rank">CMDR</span>
+                <span class="user-name" id="user-name">OPERATOR</span>
+                <button class="logout-btn" onclick="handleLogout()" title="Logout">⏻</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="menu-container">
+        <!-- Left Panel - Menu Options (1/3) -->
+        <aside class="menu-panel">
+            <div class="panel-section">
+                <h2 class="section-title">
+                    <span class="title-icon">◆</span>
+                    COMMAND OPTIONS
+                </h2>
+                
+                <nav class="menu-nav">
+                    <button class="menu-btn" id="btn-new-game" onclick="showModal('new-game-modal')">
+                        <span class="btn-icon">⊕</span>
+                        <span class="btn-content">
+                            <span class="btn-title">NEW CAMPAIGN</span>
+                            <span class="btn-desc">Begin a new strategic operation</span>
+                        </span>
+                        <span class="btn-arrow">▶</span>
+                    </button>
+                    
+                    <button class="menu-btn" id="btn-load-game" onclick="showModal('load-game-modal')">
+                        <span class="btn-icon">⊡</span>
+                        <span class="btn-content">
+                            <span class="btn-title">LOAD CAMPAIGN</span>
+                            <span class="btn-desc">Resume saved operation</span>
+                        </span>
+                        <span class="btn-arrow">▶</span>
+                    </button>
+                    
+                    <button class="menu-btn" id="btn-multiplayer" onclick="showModal('multiplayer-modal')">
+                        <span class="btn-icon">⊛</span>
+                        <span class="btn-content">
+                            <span class="btn-title">MULTIPLAYER</span>
+                            <span class="btn-desc">Joint operations command</span>
+                        </span>
+                        <span class="btn-arrow">▶</span>
+                    </button>
+                    
+                    <button class="menu-btn" id="btn-settings" onclick="showModal('settings-modal')">
+                        <span class="btn-icon">⚙</span>
+                        <span class="btn-content">
+                            <span class="btn-title">SETTINGS</span>
+                            <span class="btn-desc">System configuration</span>
+                        </span>
+                        <span class="btn-arrow">▶</span>
+                    </button>
+                </nav>
+            </div>
+
+            <div class="panel-section">
+                <h2 class="section-title">
+                    <span class="title-icon">◆</span>
+                    OPERATOR STATUS
+                </h2>
+                <div class="status-info">
+                    <div class="status-row">
+                        <span class="status-label">CLEARANCE</span>
+                        <span class="status-value">TOP SECRET</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">CAMPAIGNS</span>
+                        <span class="status-value" id="stat-campaigns">0</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">VICTORIES</span>
+                        <span class="status-value" id="stat-wins">0</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">PLAYTIME</span>
+                        <span class="status-value" id="stat-time">0h 0m</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-section console-section">
+                <h2 class="section-title">
+                    <span class="title-icon">◆</span>
+                    SYSTEM LOG
+                </h2>
+                <div class="console-output" id="console-output">
+                    <!-- Console messages will appear here -->
+                </div>
+            </div>
+        </aside>
+
+        <!-- Right Panel - Globe Animation (2/3) -->
+        <section class="globe-panel">
+            <div class="globe-container" id="globe-container">
+                <!-- Three.js globe will be rendered here -->
+            </div>
+            
+            <!-- Scanning overlay -->
+            <div class="scan-overlay" id="scan-overlay">
+                <div class="scan-box" id="scan-box">
+                    <div class="scan-corner tl"></div>
+                    <div class="scan-corner tr"></div>
+                    <div class="scan-corner bl"></div>
+                    <div class="scan-corner br"></div>
+                    <div class="scan-info" id="scan-info"></div>
+                </div>
+            </div>
+            
+            <!-- Info overlays -->
+            <div class="globe-info top-left">
+                <div class="info-label">SATELLITE COVERAGE</div>
+                <div class="info-value" id="sat-coverage">98.7%</div>
+            </div>
+            
+            <div class="globe-info top-right">
+                <div class="info-label">ACTIVE THREATS</div>
+                <div class="info-value warning" id="threat-count">0</div>
+            </div>
+            
+            <div class="globe-info bottom-left">
+                <div class="info-label">TRACKED OBJECTS</div>
+                <div class="info-value" id="tracked-objects">2,847</div>
+            </div>
+            
+            <div class="globe-info bottom-right">
+                <div class="info-label">NETWORK STATUS</div>
+                <div class="info-value success" id="network-status">NOMINAL</div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="menu-footer">
+        <div class="footer-left">
+            <span class="footer-status">
+                <span class="status-dot online"></span>
+                <span>CONNECTED TO STRATCOM NETWORK</span>
+            </span>
+        </div>
+        <div class="footer-center">
+            <span class="footer-version">v2.1.7 BUILD 20251215</span>
+        </div>
+        <div class="footer-right">
+            <span class="footer-time" id="system-time">00:00:00 UTC</span>
+        </div>
+    </footer>
+
+    <!-- ==================== MODALS ==================== -->
+    
+    <!-- New Game Modal -->
+    <div class="modal-overlay" id="new-game-modal" onclick="closeModalOnOverlay(event)">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">NEW CAMPAIGN</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">OPERATION CODENAME</label>
+                    <input type="text" id="game-name" class="form-input" placeholder="OPERATION THUNDERSTRIKE">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">STARTING NATION</label>
+                    <select id="game-nation" class="form-input">
+                        <option value="">-- SELECT NATION --</option>
+                        <option value="USA">🇺🇸 United States of America</option>
+                        <option value="CHN">🇨🇳 People's Republic of China</option>
+                        <option value="RUS">🇷🇺 Russian Federation</option>
+                        <option value="DEU">🇩🇪 Germany</option>
+                        <option value="GBR">🇬🇧 United Kingdom</option>
+                        <option value="FRA">🇫🇷 France</option>
+                        <option value="JPN">🇯🇵 Japan</option>
+                        <option value="IND">🇮🇳 India</option>
+                        <option value="BRA">🇧🇷 Brazil</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">DIFFICULTY</label>
+                    <select id="game-difficulty" class="form-input">
+                        <option value="recruit">RECRUIT - Tutorial guidance</option>
+                        <option value="officer" selected>OFFICER - Standard challenge</option>
+                        <option value="commander">COMMANDER - Enhanced AI</option>
+                        <option value="general">GENERAL - Maximum realism</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn secondary" onclick="closeModal()">ABORT</button>
+                <button class="modal-btn primary" onclick="startNewGame()">COMMENCE OPERATION</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load Game Modal -->
+    <div class="modal-overlay" id="load-game-modal" onclick="closeModalOnOverlay(event)">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">LOAD CAMPAIGN</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="saves-list" id="saves-list">
+                    <div class="saves-loading">SCANNING ARCHIVES...</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn secondary" onclick="closeModal()">CANCEL</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Multiplayer Modal -->
+    <div class="modal-overlay" id="multiplayer-modal" onclick="closeModalOnOverlay(event)">
+        <div class="modal wide">
+            <div class="modal-header">
+                <h2 class="modal-title">MULTIPLAYER COMMAND</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="mp-tabs">
+                    <button class="mp-tab active" onclick="switchMPTab('join')">JOIN GAME</button>
+                    <button class="mp-tab" onclick="switchMPTab('host')">HOST GAME</button>
+                </div>
+                
+                <div class="mp-content" id="mp-join">
+                    <div class="form-group">
+                        <label class="form-label">LOBBY CODE</label>
+                        <input type="text" id="lobby-code" class="form-input" placeholder="ENTER 6-DIGIT CODE" maxlength="6" style="text-transform: uppercase;">
+                    </div>
+                    <button class="modal-btn primary" onclick="joinLobby()" style="width: 100%;">JOIN LOBBY</button>
+                    
+                    <div class="divider"><span>OR BROWSE LOBBIES</span></div>
+                    
+                    <div class="lobbies-list" id="lobbies-list">
+                        <div class="saves-loading">SCANNING FOR ACTIVE LOBBIES...</div>
+                    </div>
+                </div>
+                
+                <div class="mp-content hidden" id="mp-host">
+                    <div class="form-group">
+                        <label class="form-label">LOBBY NAME</label>
+                        <input type="text" id="host-name" class="form-input" placeholder="OPERATION MULTIPLAYER">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">MAX PLAYERS</label>
+                        <select id="host-players" class="form-input">
+                            <option value="2">2 Players</option>
+                            <option value="4" selected>4 Players</option>
+                            <option value="6">6 Players</option>
+                            <option value="8">8 Players</option>
+                        </select>
+                    </div>
+                    <button class="modal-btn primary" onclick="createLobby()" style="width: 100%;">CREATE LOBBY</button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn secondary" onclick="closeModal()">CANCEL</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal-overlay" id="settings-modal" onclick="closeModalOnOverlay(event)">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">SETTINGS</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">GRAPHICS QUALITY</label>
+                    <select id="setting-quality" class="form-input">
+                        <option value="low">LOW</option>
+                        <option value="medium" selected>MEDIUM</option>
+                        <option value="high">HIGH</option>
+                        <option value="ultra">ULTRA</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">SOUND VOLUME</label>
+                    <input type="range" id="setting-volume" class="form-range" min="0" max="100" value="70">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">
+                        <input type="checkbox" id="setting-scanlines" checked>
+                        CRT SCANLINE EFFECT
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn secondary" onclick="closeModal()">CANCEL</button>
+                <button class="modal-btn primary" onclick="saveSettings()">SAVE SETTINGS</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <!-- Three.js -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCwm6URBOZqa7RG2WyqjYpcB-fTt2TOu14",
+            authDomain: "stratcom-global-cmd.firebaseapp.com",
+            projectId: "stratcom-global-cmd",
+            storageBucket: "stratcom-global-cmd.firebasestorage.app",
+            messagingSenderId: "546213515536",
+            appId: "1:546213515536:web:7178a4229352c2d68ed595"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // Check auth state
+        auth.onAuthStateChanged((user) => {
+            if (!user) {
+                window.location.href = 'login.html';
+            } else {
+                initializeMenu(user);
+            }
+        });
+
+        // ==================== MENU INITIALIZATION ====================
+        
+        function initializeMenu(user) {
+            // Update user info
+            document.getElementById('user-name').textContent = 
+                (user.displayName || user.email.split('@')[0]).toUpperCase();
+            
+            // Log to console
+            logMessage('System initialized', 'success');
+            logMessage(`Operator authenticated: ${user.email}`, 'info');
+            logMessage('Globe renderer starting...', 'info');
+            
+            // Initialize globe
+            initGlobe();
+            
+            // Start time update
+            updateTime();
+            setInterval(updateTime, 1000);
+            
+            // Load user stats
+            loadUserStats(user.uid);
+        }
+        
+        // Make functions globally available
+        window.handleLogout = async function() {
+            await auth.signOut();
+            window.location.href = 'login.html';
+        };
+        
+        window.showModal = function(modalId) {
+            document.getElementById(modalId).classList.add('active');
+            if (modalId === 'load-game-modal') loadSavedGames();
+        };
+        
+        window.closeModal = function() {
+            document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));
+        };
+        
+        window.closeModalOnOverlay = function(e) {
+            if (e.target.classList.contains('modal-overlay')) closeModal();
+        };
+        
+        window.switchMPTab = function(tab) {
+            document.querySelectorAll('.mp-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.mp-content').forEach(c => c.classList.add('hidden'));
+            event.target.classList.add('active');
+            document.getElementById('mp-' + tab).classList.remove('hidden');
+        };
+        
+        window.startNewGame = function() {
+            const nation = document.getElementById('game-nation').value;
+            if (!nation) {
+                alert('Please select a nation');
+                return;
+            }
+            
+            const config = {
+                name: document.getElementById('game-name').value || 'OPERATION ' + generateCodename(),
+                nation: nation,
+                difficulty: document.getElementById('game-difficulty').value
+            };
+            
+            // Store config and redirect to game
+            sessionStorage.setItem('newGameConfig', JSON.stringify(config));
+            window.location.href = 'game.html';
+        };
+
+        window.saveSettings = function() {
+            // Save to localStorage
+            const settings = {
+                quality: document.getElementById('setting-quality').value,
+                volume: document.getElementById('setting-volume').value,
+                scanlines: document.getElementById('setting-scanlines').checked
+            };
+            localStorage.setItem('stratcomSettings', JSON.stringify(settings));
+            
+            // Apply scanlines
+            document.querySelector('.crt-overlay').style.display = 
+                settings.scanlines ? 'block' : 'none';
+            
+            closeModal();
+            logMessage('Settings saved', 'success');
+        };
+
+        function generateCodename() {
+            const adj = ['THUNDER', 'IRON', 'STEEL', 'SHADOW', 'RAPID', 'SILENT', 'DESERT', 'ARCTIC'];
+            const noun = ['STORM', 'SHIELD', 'SPEAR', 'EAGLE', 'LION', 'FURY', 'DAWN', 'STRIKE'];
+            return adj[Math.floor(Math.random() * adj.length)] + ' ' + 
+                   noun[Math.floor(Math.random() * noun.length)];
+        }
+
+        async function loadSavedGames() {
+            const list = document.getElementById('saves-list');
+            list.innerHTML = '<div class="saves-loading">SCANNING ARCHIVES...</div>';
+            
+            try {
+                const user = auth.currentUser;
+                if (!user) return;
+                
+                const saves = await db.collection('players').doc(user.uid)
+                    .collection('saves').orderBy('savedAt', 'desc').limit(10).get();
+                
+                if (saves.empty) {
+                    list.innerHTML = '<div class="saves-empty">NO SAVED CAMPAIGNS FOUND</div>';
+                    return;
+                }
+                
+                list.innerHTML = '';
+                saves.forEach(doc => {
+                    const data = doc.data();
+                    const div = document.createElement('div');
+                    div.className = 'save-item';
+                    div.innerHTML = `
+                        <div class="save-info">
+                            <div class="save-name">${data.name || 'UNNAMED'}</div>
+                            <div class="save-meta">${data.nation || 'Unknown'} • ${formatDate(data.savedAt)}</div>
+                        </div>
+                        <button class="save-load" onclick="loadGame('${doc.id}')">LOAD</button>
+                    `;
+                    list.appendChild(div);
+                });
+            } catch (error) {
+                list.innerHTML = '<div class="saves-empty">ERROR ACCESSING ARCHIVES</div>';
+                console.error(error);
+            }
+        }
+        
+        window.loadGame = async function(saveId) {
+            sessionStorage.setItem('loadGameId', saveId);
+            window.location.href = 'game.html';
+        };
+
+        async function loadUserStats(uid) {
+            try {
+                const doc = await db.collection('players').doc(uid).get();
+                if (doc.exists) {
+                    const data = doc.data();
+                    document.getElementById('stat-campaigns').textContent = data.gamesPlayed || 0;
+                    document.getElementById('stat-wins').textContent = data.stats?.wins || 0;
+                    // Format playtime
+                    const hours = Math.floor((data.playtime || 0) / 60);
+                    const mins = (data.playtime || 0) % 60;
+                    document.getElementById('stat-time').textContent = `${hours}h ${mins}m`;
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        function formatDate(timestamp) {
+            if (!timestamp) return 'Unknown';
+            const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString().slice(0, 5);
+        }
+
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('system-time').textContent = 
+                now.toISOString().split('T')[1].split('.')[0] + ' UTC';
+        }
+
+        // ==================== CONSOLE LOG ====================
+        
+        const maxConsoleLines = 50;
+        
+        function logMessage(message, type = 'info') {
+            const console = document.getElementById('console-output');
+            const line = document.createElement('div');
+            line.className = `console-line ${type}`;
+            
+            const time = new Date().toISOString().split('T')[1].split('.')[0];
+            line.innerHTML = `<span class="console-time">[${time}]</span> ${message}`;
+            
+            console.appendChild(line);
+            
+            // Limit lines
+            while (console.children.length > maxConsoleLines) {
+                console.removeChild(console.firstChild);
+            }
+            
+            console.scrollTop = console.scrollHeight;
+        }
+
+        // ==================== GLOBE RENDERER ====================
+        
+        let scene, camera, renderer, globe, atmosphere, controls;
+        let satellites = [];
+        let missiles = [];
+        let fleets = [];
+        let scanTarget = null;
+        
+        function initGlobe() {
+            const container = document.getElementById('globe-container');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            
+            // Scene
+            scene = new THREE.Scene();
+            
+            // Camera
+            camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+            camera.position.z = 4;
+            
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(width, height);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+            
+            // Controls
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.autoRotate = true;
+            controls.autoRotateSpeed = 0.3;
+            controls.enableZoom = false;
+            controls.enablePan = false;
+            
+            // Create Earth
+            createEarth();
+            
+            // Create atmosphere
+            createAtmosphere();
+            
+            // Create satellites
+            createSatellites(15);
+            
+            // Create background stars
+            createStars();
+            
+            // Start animation
+            animate();
+            
+            // Handle resize
+            window.addEventListener('resize', onResize);
+            
+            // Start random events
+            setInterval(launchMissile, 8000);
+            setInterval(scanArea, 12000);
+            
+            logMessage('Globe renderer initialized', 'success');
+        }
+        
+        function createEarth() {
+            const geometry = new THREE.SphereGeometry(1, 64, 64);
+            
+            // Create procedural texture
+            const canvas = document.createElement('canvas');
+            canvas.width = 2048;
+            canvas.height = 1024;
+            const ctx = canvas.getContext('2d');
+            
+            // Ocean
+            ctx.fillStyle = '#0a1520';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw continents (simplified)
+            ctx.fillStyle = '#1a2a20';
+            ctx.strokeStyle = '#00ff88';
+            ctx.lineWidth = 2;
+            
+            // Draw grid lines
+            ctx.strokeStyle = '#00ff8822';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 18; i++) {
+                ctx.beginPath();
+                ctx.moveTo(0, i * (canvas.height / 18));
+                ctx.lineTo(canvas.width, i * (canvas.height / 18));
+                ctx.stroke();
+            }
+            for (let i = 0; i <= 36; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * (canvas.width / 36), 0);
+                ctx.lineTo(i * (canvas.width / 36), canvas.height);
+                ctx.stroke();
+            }
+            
+            // Simplified continents
+            const continents = [
+                // North America
+                [[200, 150], [500, 100], [600, 200], [550, 400], [350, 450], [150, 300]],
+                // South America
+                [[400, 500], [500, 480], [520, 700], [450, 850], [350, 800], [380, 600]],
+                // Europe
+                [[900, 120], [1100, 100], [1150, 200], [1100, 300], [950, 280], [880, 180]],
+                // Africa
+                [[900, 350], [1100, 320], [1150, 500], [1050, 700], [900, 680], [850, 500]],
+                // Asia
+                [[1150, 100], [1600, 80], [1700, 200], [1650, 400], [1400, 450], [1200, 350], [1100, 200]],
+                // Australia
+                [[1500, 600], [1650, 580], [1700, 700], [1600, 780], [1480, 750]]
+            ];
+            
+            ctx.fillStyle = '#152520';
+            ctx.strokeStyle = '#00ff88';
+            ctx.lineWidth = 2;
+            
+            continents.forEach(continent => {
+                ctx.beginPath();
+                ctx.moveTo(continent[0][0], continent[0][1]);
+                continent.forEach(point => ctx.lineTo(point[0], point[1]));
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+            });
+            
+            const texture = new THREE.CanvasTexture(canvas);
+            
+            const material = new THREE.MeshPhongMaterial({
+                map: texture,
+                bumpScale: 0.02,
+                specular: new THREE.Color(0x333333),
+                shininess: 5
+            });
+            
+            globe = new THREE.Mesh(geometry, material);
+            scene.add(globe);
+            
+            // Add lights
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+            directionalLight.position.set(5, 3, 5);
+            scene.add(directionalLight);
+        }
+        
+        function createAtmosphere() {
+            const geometry = new THREE.SphereGeometry(1.05, 64, 64);
+            const material = new THREE.ShaderMaterial({
+                vertexShader: `
+                    varying vec3 vNormal;
+                    void main() {
+                        vNormal = normalize(normalMatrix * normal);
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                    }
+                `,
+                fragmentShader: `
+                    varying vec3 vNormal;
+                    void main() {
+                        float intensity = pow(0.65 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 2.0);
+                        gl_FragColor = vec4(0.0, 1.0, 0.53, 1.0) * intensity * 0.5;
+                    }
+                `,
+                blending: THREE.AdditiveBlending,
+                side: THREE.BackSide,
+                transparent: true
+            });
+            
+            atmosphere = new THREE.Mesh(geometry, material);
+            scene.add(atmosphere);
+        }
+        
+        function createSatellites(count) {
+            const geometry = new THREE.BoxGeometry(0.02, 0.02, 0.02);
+            const material = new THREE.MeshBasicMaterial({ color: 0x00ff88 });
+            
+            for (let i = 0; i < count; i++) {
+                const sat = new THREE.Mesh(geometry, material);
+                
+                // Random orbit parameters
+                const radius = 1.3 + Math.random() * 0.4;
+                const speed = 0.001 + Math.random() * 0.002;
+                const inclination = Math.random() * Math.PI;
+                const phase = Math.random() * Math.PI * 2;
+                
+                sat.userData = { radius, speed, inclination, phase, angle: phase };
+                satellites.push(sat);
+                scene.add(sat);
+                
+                // Orbit trail
+                const trailGeometry = new THREE.BufferGeometry();
+                const trailPoints = [];
+                for (let j = 0; j <= 100; j++) {
+                    const a = (j / 100) * Math.PI * 2;
+                    trailPoints.push(
+                        Math.cos(a) * radius * Math.cos(inclination),
+                        Math.sin(a) * radius,
+                        Math.cos(a) * radius * Math.sin(inclination)
+                    );
+                }
+                trailGeometry.setAttribute('position', new THREE.Float32BufferAttribute(trailPoints, 3));
+                const trailMaterial = new THREE.LineBasicMaterial({ color: 0x00ff88, transparent: true, opacity: 0.1 });
+                const trail = new THREE.Line(trailGeometry, trailMaterial);
+                scene.add(trail);
+            }
+        }
+        
+        function createStars() {
+            const geometry = new THREE.BufferGeometry();
+            const positions = [];
+            
+            for (let i = 0; i < 2000; i++) {
+                const r = 50 + Math.random() * 50;
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.acos(2 * Math.random() - 1);
+                
+                positions.push(
+                    r * Math.sin(phi) * Math.cos(theta),
+                    r * Math.sin(phi) * Math.sin(theta),
+                    r * Math.cos(phi)
+                );
+            }
+            
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            
+            const material = new THREE.PointsMaterial({
+                color: 0xffffff,
+                size: 0.5,
+                transparent: true,
+                opacity: 0.8
+            });
+            
+            const stars = new THREE.Points(geometry, material);
+            scene.add(stars);
+        }
+        
+        function launchMissile() {
+            // Random start and end points on globe
+            const startLat = (Math.random() - 0.5) * Math.PI;
+            const startLon = Math.random() * Math.PI * 2;
+            const endLat = (Math.random() - 0.5) * Math.PI;
+            const endLon = Math.random() * Math.PI * 2;
+            
+            const start = latLonToVector3(startLat, startLon, 1.01);
+            const end = latLonToVector3(endLat, endLon, 1.01);
+            
+            // Create arc
+            const mid = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
+            mid.normalize().multiplyScalar(1.5); // Arc height
+            
+            const curve = new THREE.QuadraticBezierCurve3(start, mid, end);
+            const points = curve.getPoints(50);
+            
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+            const material = new THREE.LineBasicMaterial({ 
+                color: 0xff4444, 
+                transparent: true, 
+                opacity: 0.8 
+            });
+            
+            const missile = new THREE.Line(geometry, material);
+            missile.userData = { 
+                progress: 0, 
+                points: points,
+                endPoint: end 
+            };
+            
+            missiles.push(missile);
+            scene.add(missile);
+            
+            // Animate missile
+            animateMissile(missile);
+            
+            logMessage('BALLISTIC LAUNCH DETECTED - TRACKING', 'warning');
+        }
+        
+        function animateMissile(missile) {
+            const duration = 3000;
+            const startTime = Date.now();
+            
+            function update() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // Update visible portion of path
+                const visiblePoints = missile.userData.points.slice(0, Math.floor(progress * 50) + 1);
+                missile.geometry.setFromPoints(visiblePoints);
+                
+                if (progress >= 1) {
+                    // Create explosion effect
+                    createExplosion(missile.userData.endPoint);
+                    scene.remove(missile);
+                    missiles = missiles.filter(m => m !== missile);
+                    logMessage('IMPACT CONFIRMED - ASSESSING DAMAGE', 'error');
+                } else {
+                    requestAnimationFrame(update);
+                }
+            }
+            update();
+        }
+        
+        function createExplosion(position) {
+            const geometry = new THREE.SphereGeometry(0.02, 16, 16);
+            const material = new THREE.MeshBasicMaterial({ 
+                color: 0xff8800, 
+                transparent: true 
+            });
+            
+            const explosion = new THREE.Mesh(geometry, material);
+            explosion.position.copy(position);
+            scene.add(explosion);
+            
+            // Animate explosion
+            const startTime = Date.now();
+            function animate() {
+                const elapsed = Date.now() - startTime;
+                const scale = 1 + elapsed / 200;
+                const opacity = 1 - elapsed / 1000;
+                
+                explosion.scale.set(scale, scale, scale);
+                explosion.material.opacity = Math.max(0, opacity);
+                
+                if (opacity > 0) {
+                    requestAnimationFrame(animate);
+                } else {
+                    scene.remove(explosion);
+                }
+            }
+            animate();
+        }
+        
+        function scanArea() {
+            const scanBox = document.getElementById('scan-box');
+            const scanInfo = document.getElementById('scan-info');
+            const overlay = document.getElementById('scan-overlay');
+            
+            overlay.classList.add('active');
+            
+            // Random position
+            const x = 20 + Math.random() * 60;
+            const y = 20 + Math.random() * 60;
+            scanBox.style.left = x + '%';
+            scanBox.style.top = y + '%';
+            
+            // Random scan results
+            const types = [
+                { type: 'NAVAL FLEET', detail: `${Math.floor(Math.random() * 3 + 1)} CARRIERS, ${Math.floor(Math.random() * 5 + 2)} ESCORTS` },
+                { type: 'AIR FORMATION', detail: `${Math.floor(Math.random() * 12 + 4)} AIRCRAFT DETECTED` },
+                { type: 'SUBMARINE', detail: 'DEPTH: ' + Math.floor(Math.random() * 300 + 100) + 'M' },
+                { type: 'CARGO CONVOY', detail: `${Math.floor(Math.random() * 8 + 3)} VESSELS - CIVILIAN` },
+                { type: 'PATROL VESSEL', detail: 'ROUTINE PATROL - NO THREAT' }
+            ];
+            
+            const scan = types[Math.floor(Math.random() * types.length)];
+            const threat = Math.random() > 0.7 ? 'HOSTILE' : 'NEUTRAL';
+            
+            scanInfo.innerHTML = `
+                <div class="scan-type">${scan.type}</div>
+                <div class="scan-detail">${scan.detail}</div>
+                <div class="scan-threat ${threat.toLowerCase()}">${threat}</div>
+            `;
+            
+            logMessage(`SCAN: ${scan.type} - ${threat}`, threat === 'HOSTILE' ? 'warning' : 'info');
+            
+            // Hide after delay
+            setTimeout(() => {
+                overlay.classList.remove('active');
+            }, 4000);
+        }
+        
+        function latLonToVector3(lat, lon, radius) {
+            return new THREE.Vector3(
+                radius * Math.cos(lat) * Math.cos(lon),
+                radius * Math.sin(lat),
+                radius * Math.cos(lat) * Math.sin(lon)
+            );
+        }
+        
+        function onResize() {
+            const container = document.getElementById('globe-container');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+            renderer.setSize(width, height);
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // Update satellites
+            satellites.forEach(sat => {
+                sat.userData.angle += sat.userData.speed;
+                const a = sat.userData.angle;
+                const r = sat.userData.radius;
+                const inc = sat.userData.inclination;
+                
+                sat.position.set(
+                    Math.cos(a) * r * Math.cos(inc),
+                    Math.sin(a) * r,
+                    Math.cos(a) * r * Math.sin(inc)
+                );
+            });
+            
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        
+        // Update tracked objects count periodically
+        setInterval(() => {
+            const count = 2800 + Math.floor(Math.random() * 100);
+            document.getElementById('tracked-objects').textContent = count.toLocaleString();
+        }, 5000);
+    </script>
+</body>
+</html>
