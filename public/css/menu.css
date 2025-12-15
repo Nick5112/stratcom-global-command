@@ -346,7 +346,7 @@ body {
 .info-value.success { color: var(--success); }
 .info-value.error { color: var(--error); }
 
-/* Scan Overlay */
+/* Scan Overlay - Always visible, tracker controls visibility */
 .scan-overlay {
     position: absolute;
     top: 0;
@@ -354,12 +354,7 @@ body {
     width: 100%;
     height: 100%;
     pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.scan-overlay.active {
-    opacity: 1;
+    z-index: 10;
 }
 
 .scan-box {
@@ -421,54 +416,9 @@ body {
 .scan-threat.neutral { color: var(--success); }
 .scan-threat.hostile { color: var(--error); }
 
-/* Radar Sweep Animation */
+/* Radar Sweep - Hidden, using 3D scan line instead */
 .radar-sweep {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 100%;
-    height: 100%;
-    transform: translate(-50%, -50%);
-    pointer-events: none;
-    z-index: 5;
-}
-
-.radar-sweep::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 80%;
-    height: 80%;
-    transform: translate(-50%, -50%);
-    background: conic-gradient(
-        from 0deg,
-        transparent 0deg,
-        transparent 350deg,
-        rgba(0, 255, 136, 0.15) 355deg,
-        rgba(0, 255, 136, 0.3) 358deg,
-        rgba(0, 255, 136, 0.5) 360deg
-    );
-    border-radius: 50%;
-    animation: radarSweep 8s linear infinite;
-    opacity: 0.6;
-}
-
-.radar-sweep::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 80%;
-    height: 80%;
-    transform: translate(-50%, -50%);
-    border: 1px solid rgba(0, 255, 136, 0.2);
-    border-radius: 50%;
-}
-
-@keyframes radarSweep {
-    from { transform: translate(-50%, -50%) rotate(0deg); }
-    to { transform: translate(-50%, -50%) rotate(360deg); }
+    display: none;
 }
 
 /* Scan Tracker - Tracking Animation */

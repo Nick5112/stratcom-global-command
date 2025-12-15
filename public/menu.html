@@ -603,6 +603,9 @@
             // Create background stars
             createStars();
             
+            // Create 3D scan line
+            createScanLine();
+            
             // Start animation
             animate();
             
@@ -731,9 +734,6 @@
         }
         
         function createSatellites(count) {
-            const geometry = new THREE.BoxGeometry(0.015, 0.015, 0.03);
-            const material = new THREE.MeshBasicMaterial({ color: 0x00ff88 });
-            
             // Create different orbit types like real satellites
             const orbitTypes = [
                 // Low Earth Orbit (LEO) - fast, inclined
@@ -749,8 +749,6 @@
             ];
             
             for (let i = 0; i < count; i++) {
-                const sat = new THREE.Mesh(geometry, material.clone());
-                
                 // Pick orbit type with weighted distribution
                 const orbitType = orbitTypes[Math.floor(Math.random() * orbitTypes.length)];
                 
@@ -758,13 +756,50 @@
                 const speed = orbitType.minSpeed + Math.random() * (orbitType.maxSpeed - orbitType.minSpeed);
                 const inclination = orbitType.inclinationRange[0] + Math.random() * (orbitType.inclinationRange[1] - orbitType.inclinationRange[0]);
                 const phase = Math.random() * Math.PI * 2;
-                const ascending = Math.random() * Math.PI * 2; // Longitude of ascending node
+                const raan = Math.random() * Math.PI * 2; // Right Ascension of Ascending Node
                 
-                sat.userData = { radius, speed, inclination, phase, angle: phase, ascending };
-                satellites.push(sat);
-                scene.add(sat);
+                // Create satellite body - small glowing box
+                const satGroup = new THREE.Group();
                 
-                // Orbit trail with proper 3D orbital mechanics
+                // Main body
+                const bodyGeometry = new THREE.BoxGeometry(0.02, 0.02, 0.04);
+                const bodyMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff88 });
+                const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+                satGroup.add(body);
+                
+                // Solar panels
+                const panelGeometry = new THREE.PlaneGeometry(0.06, 0.015);
+                const panelMaterial = new THREE.MeshBasicMaterial({ 
+                    color: 0x4488ff, 
+                    side: THREE.DoubleSide,
+                    transparent: true,
+                    opacity: 0.8
+                });
+                const leftPanel = new THREE.Mesh(panelGeometry, panelMaterial);
+                leftPanel.position.x = -0.04;
+                leftPanel.rotation.y = Math.PI / 2;
+                satGroup.add(leftPanel);
+                
+                const rightPanel = new THREE.Mesh(panelGeometry, panelMaterial);
+                rightPanel.position.x = 0.04;
+                rightPanel.rotation.y = Math.PI / 2;
+                satGroup.add(rightPanel);
+                
+                // Glowing point for visibility
+                const glowGeometry = new THREE.SphereGeometry(0.015, 8, 8);
+                const glowMaterial = new THREE.MeshBasicMaterial({ 
+                    color: 0x00ff88,
+                    transparent: true,
+                    opacity: 0.9
+                });
+                const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+                satGroup.add(glow);
+                
+                satGroup.userData = { radius, speed, inclination, raan, angle: phase, eccentricity: 0 };
+                satellites.push(satGroup);
+                scene.add(satGroup);
+                
+                // Orbit trail
                 const trailGeometry = new THREE.BufferGeometry();
                 const trailPoints = [];
                 for (let j = 0; j <= 100; j++) {
@@ -773,16 +808,16 @@
                     const x = Math.cos(a) * radius;
                     const y = Math.sin(a) * radius * Math.sin(inclination);
                     const z = Math.sin(a) * radius * Math.cos(inclination);
-                    // Rotate by ascending node
-                    const xr = x * Math.cos(ascending) - z * Math.sin(ascending);
-                    const zr = x * Math.sin(ascending) + z * Math.cos(ascending);
+                    // Rotate by RAAN
+                    const xr = x * Math.cos(raan) - z * Math.sin(raan);
+                    const zr = x * Math.sin(raan) + z * Math.cos(raan);
                     trailPoints.push(xr, y, zr);
                 }
                 trailGeometry.setAttribute('position', new THREE.Float32BufferAttribute(trailPoints, 3));
                 const trailMaterial = new THREE.LineBasicMaterial({ 
                     color: 0x00ff88, 
                     transparent: true, 
-                    opacity: 0.08 
+                    opacity: 0.12 
                 });
                 const trail = new THREE.Line(trailGeometry, trailMaterial);
                 scene.add(trail);
@@ -818,19 +853,84 @@
             scene.add(stars);
         }
         
+        // 3D Radar scan line - pole to pole
+        let scanLine, scanLineAngle = 0;
+        
+        function createScanLine() {
+            // Create a pole-to-pole arc on the globe surface
+            const scanGeometry = new THREE.BufferGeometry();
+            const points = [];
+            
+            // Create arc from north pole to south pole
+            for (let i = 0; i <= 50; i++) {
+                const lat = (i / 50) * Math.PI - Math.PI / 2; // -90 to +90 degrees
+                const lon = 0; // Will be rotated in animation
+                const r = 1.015; // Slightly above globe surface
+                
+                points.push(
+                    r * Math.cos(lat) * Math.cos(lon),
+                    r * Math.sin(lat),
+                    r * Math.cos(lat) * Math.sin(lon)
+                );
+            }
+            
+            scanGeometry.setAttribute('position', new THREE.Float32BufferAttribute(points, 3));
+            
+            const scanMaterial = new THREE.LineBasicMaterial({
+                color: 0x00ff88,
+                transparent: true,
+                opacity: 0.8
+            });
+            
+            scanLine = new THREE.Line(scanGeometry, scanMaterial);
+            scene.add(scanLine);
+            
+            // Add a trailing glow effect - multiple fading lines behind the scan
+            for (let t = 1; t <= 5; t++) {
+                const trailGeometry = new THREE.BufferGeometry();
+                trailGeometry.setAttribute('position', new THREE.Float32BufferAttribute(points, 3));
+                const trailMaterial = new THREE.LineBasicMaterial({
+                    color: 0x00ff88,
+                    transparent: true,
+                    opacity: 0.3 - (t * 0.05)
+                });
+                const trailLine = new THREE.Line(trailGeometry, trailMaterial);
+                trailLine.userData = { offset: t * 0.05 }; // Rotation offset
+                scanLine.add(trailLine);
+            }
+        }
+        
+        function updateScanLine() {
+            if (!scanLine) return;
+            
+            scanLineAngle += 0.005; // Rotation speed
+            if (scanLineAngle > Math.PI * 2) scanLineAngle = 0;
+            
+            scanLine.rotation.y = scanLineAngle;
+            
+            // Update trailing lines
+            scanLine.children.forEach(trail => {
+                trail.rotation.y = -trail.userData.offset;
+            });
+        }
+        
         function launchMissile() {
             // Random start and end points on globe
-            const startLat = (Math.random() - 0.5) * Math.PI;
+            const startLat = (Math.random() - 0.5) * Math.PI * 0.8; // Limit latitude range
             const startLon = Math.random() * Math.PI * 2;
-            const endLat = (Math.random() - 0.5) * Math.PI;
+            const endLat = (Math.random() - 0.5) * Math.PI * 0.8;
             const endLon = Math.random() * Math.PI * 2;
             
-            const start = latLonToVector3(startLat, startLon, 1.01);
-            const end = latLonToVector3(endLat, endLon, 1.01);
+            const start = latLonToVector3(startLat, startLon, 1.02);
+            const end = latLonToVector3(endLat, endLon, 1.02);
             
-            // Create arc
+            // Calculate proper arc height based on distance
+            const distance = start.distanceTo(end);
+            const arcHeight = 1.0 + Math.max(0.3, distance * 0.4); // Higher arc for longer distances
+            
+            // Create arc with control point properly above the surface
             const mid = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
-            mid.normalize().multiplyScalar(1.5); // Arc height
+            mid.normalize().multiplyScalar(arcHeight); // Arc height scales with distance
             
             const curve = new THREE.QuadraticBezierCurve3(start, mid, end);
             const points = curve.getPoints(50);
@@ -913,6 +1013,20 @@
             animate();
         }
         
+        // Helper to project 3D world position to 2D screen coordinates
+        function worldToScreen(position) {
+            const vector = position.clone();
+            vector.project(camera);
+            
+            const container = document.getElementById('globe-container');
+            const rect = container.getBoundingClientRect();
+            
+            return {
+                x: (vector.x * 0.5 + 0.5) * rect.width,
+                y: (-vector.y * 0.5 + 0.5) * rect.height
+            };
+        }
+        
         function scanArea() {
             const tracker = document.getElementById('scan-tracker');
             const scanClass = document.getElementById('scan-class');
@@ -920,23 +1034,16 @@
             const scanType = document.getElementById('scan-type');
             const scanDetails = document.getElementById('scan-details');
             const scanStatus = document.getElementById('scan-status');
-            const globePanel = document.querySelector('.globe-panel');
-            
-            // Get globe panel dimensions
-            const rect = globePanel.getBoundingClientRect();
-            const centerX = rect.width / 2;
-            const centerY = rect.height / 2;
-            const maxRadius = Math.min(rect.width, rect.height) * 0.35;
             
             // Generate target ID
             const targetId = 'TGT-' + String(Math.floor(Math.random() * 9999)).padStart(4, '0');
             
-            // Intelligence reports - much more varied and interesting
+            // Intelligence reports
             const intelReports = [
                 // Naval
                 { type: 'CARRIER STRIKE GROUP', classification: 'hostile', 
                   details: [
-                    { label: 'COMPOSITION', value: `${Math.floor(Math.random()*2+1)} CVN, ${Math.floor(Math.random()*4+2)} DDG, ${Math.floor(Math.random()*2+1)} CG` },
+                    { label: 'COMPOSITION', value: `${Math.floor(Math.random()*2+1)} CVN, ${Math.floor(Math.random()*4+2)} DDG` },
                     { label: 'HEADING', value: `${Math.floor(Math.random()*360)}° at ${Math.floor(Math.random()*20+10)} KTS` },
                     { label: 'AIR OPS', value: Math.random() > 0.5 ? 'ACTIVE' : 'STANDBY' }
                   ], status: 'alert', statusText: '⚠ HIGH PRIORITY TARGET' },
@@ -950,66 +1057,39 @@
                   details: [
                     { label: 'VESSELS', value: `${Math.floor(Math.random()*12+3)} SHIPS` },
                     { label: 'CARGO', value: ['CONTAINERS', 'BULK', 'TANKER', 'MIXED'][Math.floor(Math.random()*4)] },
-                    { label: 'FLAG', value: ['PANAMA', 'LIBERIA', 'MARSHALL IS.', 'HONG KONG'][Math.floor(Math.random()*4)] }
+                    { label: 'FLAG', value: ['PANAMA', 'LIBERIA', 'MARSHALL IS.'][Math.floor(Math.random()*3)] }
                   ], status: 'monitoring', statusText: 'MONITORING - NO THREAT' },
-                
                 // Air
                 { type: 'FIGHTER FORMATION', classification: 'hostile',
                   details: [
-                    { label: 'AIRCRAFT', value: `${Math.floor(Math.random()*8+4)}x ${['SU-35', 'J-20', 'MIG-31', 'SU-57'][Math.floor(Math.random()*4)]}` },
+                    { label: 'AIRCRAFT', value: `${Math.floor(Math.random()*8+4)}x ${['SU-35', 'J-20', 'MIG-31'][Math.floor(Math.random()*3)]}` },
                     { label: 'ALTITUDE', value: `FL${Math.floor(Math.random()*200+250)}` },
                     { label: 'SPEED', value: `MACH ${(Math.random()*0.5+0.8).toFixed(1)}` }
                   ], status: 'alert', statusText: '⚠ INTERCEPT ADVISORY' },
-                { type: 'TRANSPORT AIRCRAFT', classification: 'neutral',
-                  details: [
-                    { label: 'TYPE', value: ['IL-76', 'C-17', 'AN-124', 'A400M'][Math.floor(Math.random()*4)] },
-                    { label: 'ROUTE', value: ['POLAR', 'ATLANTIC', 'PACIFIC', 'INDIAN'][Math.floor(Math.random()*4)] },
-                    { label: 'TRANSPONDER', value: 'ACTIVE' }
-                  ], status: 'monitoring', statusText: 'LOGGED - ROUTINE TRAFFIC' },
                 { type: 'DRONE SWARM', classification: 'hostile',
                   details: [
                     { label: 'COUNT', value: `${Math.floor(Math.random()*50+20)} UNITS` },
                     { label: 'FORMATION', value: ['DISPERSED', 'TIGHT', 'ECHELON'][Math.floor(Math.random()*3)] },
                     { label: 'JAMMING', value: Math.random() > 0.5 ? 'DETECTED' : 'NONE' }
                   ], status: 'alert', statusText: '⚠ ELECTRONIC WARFARE ALERT' },
-                
-                // Ground/Intel
+                // Ground
                 { type: 'MILITARY BUILDUP', classification: 'hostile',
                   details: [
                     { label: 'FORCES', value: `~${Math.floor(Math.random()*50+10)}K PERSONNEL` },
-                    { label: 'ARMOR', value: `${Math.floor(Math.random()*200+50)} MBT DETECTED` },
+                    { label: 'ARMOR', value: `${Math.floor(Math.random()*200+50)} MBT` },
                     { label: 'ACTIVITY', value: ['STAGING', 'EXERCISES', 'MOBILIZING'][Math.floor(Math.random()*3)] }
                   ], status: 'alert', statusText: '⚠ SIGINT PRIORITY' },
                 { type: 'LAUNCH FACILITY', classification: 'hostile',
                   details: [
-                    { label: 'TYPE', value: ['ICBM', 'IRBM', 'SLBM', 'SAM'][Math.floor(Math.random()*4)] + ' COMPLEX' },
+                    { label: 'TYPE', value: ['ICBM', 'IRBM', 'SAM'][Math.floor(Math.random()*3)] + ' COMPLEX' },
                     { label: 'STATUS', value: ['ELEVATED', 'NORMAL', 'ACTIVE'][Math.floor(Math.random()*3)] },
                     { label: 'LAST UPDATE', value: `${Math.floor(Math.random()*24)}H AGO` }
                   ], status: 'tracking', statusText: 'CONTINUOUS SURVEILLANCE' },
-                { type: 'TERRORIST CELL', classification: 'hostile',
-                  details: [
-                    { label: 'MEMBERS', value: `${Math.floor(Math.random()*12+3)} CONFIRMED` },
-                    { label: 'THREAT', value: ['IMMINENT', 'ELEVATED', 'PLANNING'][Math.floor(Math.random()*3)] },
-                    { label: 'ASSETS', value: Math.random() > 0.5 ? 'EXPLOSIVES' : 'SMALL ARMS' }
-                  ], status: 'alert', statusText: '⚠ ACTIONABLE INTEL' },
-                { type: 'VIP MOVEMENT', classification: 'neutral',
-                  details: [
-                    { label: 'PRINCIPAL', value: ['HEAD OF STATE', 'DEFENSE MIN.', 'GENERAL'][Math.floor(Math.random()*3)] },
-                    { label: 'SECURITY', value: `LEVEL ${Math.floor(Math.random()*3+3)}` },
-                    { label: 'DESTINATION', value: 'CLASSIFIED' }
-                  ], status: 'monitoring', statusText: 'DIPLOMATIC WATCH' },
-                { type: 'ASSASSINATION', classification: 'hostile',
-                  details: [
-                    { label: 'TARGET', value: ['DIPLOMAT', 'OFFICIAL', 'ASSET'][Math.floor(Math.random()*3)] },
-                    { label: 'METHOD', value: ['SNIPER', 'IED', 'POISON', 'UNKNOWN'][Math.floor(Math.random()*4)] },
-                    { label: 'STATUS', value: ['CONFIRMED', 'ATTEMPTED', 'INTEL'][Math.floor(Math.random()*3)] }
-                  ], status: 'alert', statusText: '⚠ IMMEDIATE REPORT' },
-                
                 // Friendly
                 { type: 'ALLIED PATROL', classification: 'friendly',
                   details: [
-                    { label: 'CALLSIGN', value: ['EAGLE', 'VIPER', 'SHADOW', 'REAPER'][Math.floor(Math.random()*4)] + '-' + Math.floor(Math.random()*9+1) },
-                    { label: 'MISSION', value: ['PATROL', 'ESCORT', 'RECON', 'CAP'][Math.floor(Math.random()*4)] },
+                    { label: 'CALLSIGN', value: ['EAGLE', 'VIPER', 'SHADOW'][Math.floor(Math.random()*3)] + '-' + Math.floor(Math.random()*9+1) },
+                    { label: 'MISSION', value: ['PATROL', 'ESCORT', 'RECON'][Math.floor(Math.random()*3)] },
                     { label: 'FUEL', value: `${Math.floor(Math.random()*40+60)}%` }
                   ], status: 'monitoring', statusText: 'FRIENDLY - IFF CONFIRMED' },
                 { type: 'RECON SATELLITE', classification: 'friendly',
@@ -1022,38 +1102,30 @@
             
             const intel = intelReports[Math.floor(Math.random() * intelReports.length)];
             
-            // Animation: Start from random edge position
-            const startAngle = Math.random() * Math.PI * 2;
-            const startX = centerX + Math.cos(startAngle) * maxRadius * 1.5;
-            const startY = centerY + Math.sin(startAngle) * maxRadius * 1.5;
+            // Generate 3D path points on globe surface (visible front face)
+            const targetLat = (Math.random() - 0.5) * Math.PI * 0.6; // Limit latitude
+            const targetLon = (Math.random() - 0.5) * Math.PI * 0.8; // Visible hemisphere
+            const targetPos = latLonToVector3(targetLat, targetLon, 1.02);
             
-            // Target is somewhere on the visible globe
-            const targetAngle = Math.random() * Math.PI * 2;
-            const targetDist = Math.random() * maxRadius * 0.7;
-            const targetX = centerX + Math.cos(targetAngle) * targetDist;
-            const targetY = centerY + Math.sin(targetAngle) * targetDist;
+            // Create search path with 3 waypoints before target
+            const searchPath = [];
+            for (let i = 0; i < 3; i++) {
+                const lat = (Math.random() - 0.5) * Math.PI * 0.5;
+                const lon = (Math.random() - 0.5) * Math.PI * 0.6;
+                searchPath.push(latLonToVector3(lat, lon, 1.02));
+            }
+            searchPath.push(targetPos);
             
-            // Set initial position
-            tracker.style.left = startX + 'px';
-            tracker.style.top = startY + 'px';
+            // Start animation
+            let currentWaypoint = 0;
             tracker.classList.remove('locked', 'zooming');
             tracker.classList.add('active');
             
-            // Phase 1: Search across globe (2 seconds)
             logMessage(`INITIATING SCAN - SECTOR ${String.fromCharCode(65 + Math.floor(Math.random()*8))}${Math.floor(Math.random()*9+1)}`, 'info');
             
-            // Animate to intermediate points then to target
-            const searchPoints = [
-                { x: centerX + (Math.random() - 0.5) * maxRadius, y: centerY + (Math.random() - 0.5) * maxRadius },
-                { x: centerX + (Math.random() - 0.5) * maxRadius, y: centerY + (Math.random() - 0.5) * maxRadius },
-                { x: targetX, y: targetY }
-            ];
-            
-            let currentPoint = 0;
-            
-            function moveToNextPoint() {
-                if (currentPoint >= searchPoints.length) {
-                    // Arrived at target - lock on
+            function animateToWaypoint() {
+                if (currentWaypoint >= searchPath.length) {
+                    // Reached target - lock on
                     setTimeout(() => {
                         tracker.classList.add('locked');
                         
@@ -1076,28 +1148,50 @@
                         logMessage(`TARGET ACQUIRED: ${intel.type} - ${intel.classification.toUpperCase()}`, 
                             intel.classification === 'hostile' ? 'warning' : 'info');
                         
-                        // Hold for display then reset
+                        // Hold for display then hide
                         setTimeout(() => {
                             tracker.classList.remove('locked', 'active');
-                            tracker.style.left = '-200px';
-                            tracker.style.top = '-200px';
                         }, 5000);
                         
                     }, 300);
                     return;
                 }
                 
-                const point = searchPoints[currentPoint];
-                tracker.style.transition = 'all 0.8s ease-in-out';
-                tracker.style.left = point.x + 'px';
-                tracker.style.top = point.y + 'px';
+                const targetPos3D = searchPath[currentWaypoint];
+                const duration = 600; // Animation duration per waypoint
+                const startTime = Date.now();
+                const startPos = tracker.style.left ? 
+                    { x: parseFloat(tracker.style.left), y: parseFloat(tracker.style.top) } :
+                    worldToScreen(searchPath[0]);
                 
-                currentPoint++;
-                setTimeout(moveToNextPoint, 900);
+                function updatePosition() {
+                    const elapsed = Date.now() - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    const eased = 1 - Math.pow(1 - progress, 3); // Ease out cubic
+                    
+                    const targetScreen = worldToScreen(targetPos3D);
+                    const x = startPos.x + (targetScreen.x - startPos.x) * eased;
+                    const y = startPos.y + (targetScreen.y - startPos.y) * eased;
+                    
+                    tracker.style.left = x + 'px';
+                    tracker.style.top = y + 'px';
+                    
+                    if (progress < 1) {
+                        requestAnimationFrame(updatePosition);
+                    } else {
+                        currentWaypoint++;
+                        setTimeout(animateToWaypoint, 200);
+                    }
+                }
+                
+                updatePosition();
             }
             
-            // Start search movement
-            setTimeout(moveToNextPoint, 100);
+            // Initialize position and start
+            const initialScreen = worldToScreen(searchPath[0]);
+            tracker.style.left = initialScreen.x + 'px';
+            tracker.style.top = initialScreen.y + 'px';
+            setTimeout(animateToWaypoint, 100);
         }
         
         function latLonToVector3(lat, lon, radius) {
@@ -1166,6 +1260,9 @@
                     });
                 }
             });
+            
+            // Update the pole-to-pole scan line
+            updateScanLine();
             
             controls.update();
             renderer.render(scene, camera);
